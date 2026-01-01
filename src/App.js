@@ -1,10 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Mail, Code, GraduationCap, Briefcase, Github, Linkedin, ExternalLink } from 'lucide-react';
+import { Menu, Mail, Code, Github, Linkedin } from 'lucide-react';
 
-// Mock API calls (replace with actual MongoDB/backend API calls)
+// Typewriter Effect Component
+const TypewriterEffect = ({ text, speed = 100, className = "" }) => {
+  const [displayText, setDisplayText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (currentIndex < text.length) {
+      const timeout = setTimeout(() => {
+        setDisplayText(prev => prev + text[currentIndex]);
+        setCurrentIndex(prev => prev + 1);
+      }, speed);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [currentIndex, text, speed]);
+
+  return <span className={className}>{displayText}<span className="animate-pulse">|</span></span>;
+};
+
+// Mock API calls
 const api = {
   getProjects: async () => {
-    // Simulate API call - replace with: fetch('/api/projects')
     return [
       {
         id: 1,
@@ -26,6 +44,13 @@ const api = {
         description: "Working on a machine learning model that predicts image locations by analyzing a large data set of geotagged photos using Google Maps integration",
         status: "In Progress",
         tags: ["Machine Learning", "Python", "Google Maps API"]
+      },
+      {
+        id: 4,
+        title: "Personal Portfolio Website",
+        description: "Created a personal portfolio website to showcase projects and skills using React and Tailwind CSS",
+        status: "Completed",
+        tags: ["Web Development", "React", "Tailwind CSS"]
       }
     ];
   }
@@ -59,12 +84,12 @@ const Portfolio = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-black/30 backdrop-blur-lg z-50 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+            <div className="text-xl font-bold text-gray-300">
               Aniruddha Bhati
             </div>
             
@@ -74,8 +99,8 @@ const Portfolio = () => {
                 <button
                   key={section}
                   onClick={() => scrollToSection(section)}
-                  className={`capitalize transition-all hover:text-cyan-400 ${
-                    activeSection === section ? 'text-cyan-400' : 'text-white'
+                  className={`capitalize transition-all hover:text-amber-400 ${
+                    activeSection === section ? 'text-amber-700' : 'text-white'
                   }`}
                 >
                   {section}
@@ -113,24 +138,27 @@ const Portfolio = () => {
       <section id="home" className="min-h-screen flex items-center justify-center px-4 pt-16">
         <div className="max-w-4xl mx-auto text-center">
           <div className="mb-6">
-            <GraduationCap size={64} className="mx-auto text-cyan-400 mb-4" />
+            <Code size={64} className="mx-auto text-amber-700 mb-4" />
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
-            Aniruddha Bhati
+          <h1 className="text-5xl md:text-7xl font-bold mb-2">
+            <TypewriterEffect text="Aniruddha Bhati" speed={100} />
           </h1>
-          <p className="text-xl md:text-2xl text-gray-300 mb-8">
-            Computer Science & Engineering Student | AI Enthusiast | Problem Solver
+          <p className="text-xl md:text-2xl text-gray-300 mb-1 leading-tight">
+            Scholars Computer Science & Engineering Student at The Ohio State University 
           </p>
-          <div className="flex justify-center gap-4 flex-wrap">
+          <p className="text-lg md:text-xl text-gray-300 mt-0 mb-8 leading-tight">
+            Aspiring AI/ML Engineer | Emerging Developer | Growth Driven Learner
+          </p>
+          <div className="flex justify-center gap-4 flex-wrap mt-4">
             <button
               onClick={() => scrollToSection('projects')}
-              className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full font-semibold hover:shadow-lg hover:shadow-cyan-500/50 transition-all"
+              className="px-8 py-3 bg-gradient-to-r from-amber-500 to-amber-900 rounded-full font-semibold hover:shadow-lg hover:shadow-amber-700/50 transition-all"
             >
               View Projects
             </button>
             <button
               onClick={() => scrollToSection('contact')}
-              className="px-8 py-3 border-2 border-cyan-400 rounded-full font-semibold hover:bg-cyan-400/10 transition-all"
+              className="px-8 py-3 border-2 border-amber-700 rounded-full font-semibold hover:bg-amber-700/10 transition-all"
             >
               Get in Touch
             </button>
@@ -141,7 +169,7 @@ const Portfolio = () => {
       {/* About Section */}
       <section id="about" className="min-h-screen flex items-center justify-center px-4 py-20">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold mb-12 text-center bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+          <h2 className="text-4xl md:text-5xl font-bold mb-12 text-center bg-gradient-to-r from-amber-500 to-amber-900 bg-clip-text text-transparent">
             About Me
           </h2>
           <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10">
@@ -153,8 +181,8 @@ const Portfolio = () => {
               <p>
                 I'm passionate about technology, problem-solving, and exploring how data structures 
                 and algorithms shape the systems we use every day. I have a strong interest in 
-                <span className="text-cyan-400 font-semibold"> machine learning</span> and 
-                <span className="text-cyan-400 font-semibold"> generative AI</span>, and I hope to 
+                <span className="text-amber-600 font-semibold"> machine learning</span> and 
+                <span className="text-amber-600 font-semibold"> generative AI</span>, and I hope to 
                 pursue a career in those fields.
               </p>
               <p>
@@ -164,12 +192,12 @@ const Portfolio = () => {
             </div>
 
             <div className="mt-8 pt-8 border-t border-white/10">
-              <h3 className="text-xl font-semibold mb-4 text-cyan-400">Skills & Interests</h3>
+              <h3 className="text-xl font-semibold mb-4 text-amber-600">Skills & Interests</h3>
               <div className="flex flex-wrap gap-2">
                 {['Machine Learning', 'AI', 'Data Structures', 'Algorithms', 'Web Development', 'React', 'Python', 'Problem Solving'].map((skill) => (
                   <span
                     key={skill}
-                    className="px-4 py-2 bg-cyan-500/20 rounded-full text-sm border border-cyan-500/30"
+                    className="px-4 py-2 bg-amber-50/20 rounded-full text-sm border border-amber-600/30"
                   >
                     {skill}
                   </span>
@@ -183,21 +211,21 @@ const Portfolio = () => {
       {/* Projects Section */}
       <section id="projects" className="min-h-screen flex items-center justify-center px-4 py-20">
         <div className="max-w-6xl mx-auto w-full">
-          <h2 className="text-4xl md:text-5xl font-bold mb-12 text-center bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+          <h2 className="text-4xl md:text-5xl font-bold mb-12 text-center bg-gradient-to-r from-amber-500 to-amber-900 bg-clip-text text-transparent">
             Projects
           </h2>
           
           {loading ? (
-            <div className="text-center text-gray-400">Loading projects...</div>
+            <div className="text-center text-blue-400">Loading projects...</div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project) => (
                 <div
                   key={project.id}
-                  className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10 hover:border-cyan-500/50 transition-all hover:shadow-lg hover:shadow-cyan-500/20 group"
+                  className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10 hover:border-amber-300/50 transition-all hover:shadow-lg hover:shadow-amber-300/20 group"
                 >
                   <div className="flex items-start justify-between mb-4">
-                    <Code size={32} className="text-cyan-400" />
+                    <Code size={32} className="text-amber-600" />
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                       project.status === 'Completed' 
                         ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
@@ -207,7 +235,7 @@ const Portfolio = () => {
                     </span>
                   </div>
                   
-                  <h3 className="text-xl font-bold mb-3 group-hover:text-cyan-400 transition-colors">
+                  <h3 className="text-xl font-bold mb-3 group-hover:text-amber-600 transition-colors">
                     {project.title}
                   </h3>
                   
@@ -235,12 +263,12 @@ const Portfolio = () => {
       {/* Contact Section */}
       <section id="contact" className="min-h-screen flex items-center justify-center px-4 py-20">
         <div className="max-w-2xl mx-auto w-full text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-12 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+          <h2 className="text-4xl md:text-5xl font-bold mb-12 bg-gradient-to-r from-amber-500 to-amber-900 bg-clip-text text-transparent">
             Get In Touch
           </h2>
           
           <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10">
-            <Mail size={48} className="mx-auto text-cyan-400 mb-6" />
+            <Mail size={48} className="mx-auto text-amber-700 mb-6" />
             
             <p className="text-gray-300 text-lg mb-8">
               I'm always open to discussing new projects, creative ideas, or opportunities to be part of your vision.
@@ -248,7 +276,7 @@ const Portfolio = () => {
             
             <a
               href="mailto:bhati.27@buckeyemail.osu.edu"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full font-semibold hover:shadow-lg hover:shadow-cyan-500/50 transition-all"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-900 rounded-full font-semibold hover:shadow-lg hover:shadow-cyan-500/50 transition-all"
             >
               <Mail size={20} />
               bhati.27@buckeyemail.osu.edu
@@ -257,12 +285,22 @@ const Portfolio = () => {
             <div className="mt-8 pt-8 border-t border-white/10">
               <p className="text-gray-400 mb-4">Connect with me</p>
               <div className="flex justify-center gap-4">
-                <button className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
+                <a
+                  href="https://github.com/anibhati"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors"
+                >
                   <Github size={24} />
-                </button>
-                <button className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
+                </a>
+                <a
+                  href="https://www.linkedin.com/in/aniruddha-bhati-729771377/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors"
+                >
                   <Linkedin size={24} />
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -271,7 +309,7 @@ const Portfolio = () => {
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-8 text-center text-gray-400">
-        <p>© 2024 Aniruddha Bhati. Built with React & Tailwind CSS.</p>
+        <p>© 2025 Aniruddha Bhati. Built with React, Node.js, Tailwind CSS, & JSON.</p>
       </footer>
     </div>
   );
