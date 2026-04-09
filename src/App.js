@@ -258,7 +258,7 @@ const projects = [
     id: 1,
     title: "OSU Research Commons Library Website",
     description: "Developing and optimizing the OSU Research Library website with a team to improve user experience and navigation.",
-    status: "In Progress",
+    status: "Completed",
     tags: ["Web Development", "UX/UI", "Team Project"],
     icon: "🏛️",
   },
@@ -301,7 +301,7 @@ const projects = [
     description: "Analyzed NYC housing sales data using SQL queries in Databricks, performed data cleaning and trend analysis, and built a public web application(HTML/CSS/Javascript) to visualize insights and allow users to explore housing price patters across different categories of their choosing.  ",
     status: "Completed",
     tags: ["AI","Databricks", "SQL", "Data Analysis", "HTML/CSS/JS"],
-    link: "https://neura-learn-2434dc60.base44.app/dashboard",
+    link: "https://data-io-2026-dashboard.pages.dev/dashboard",
     icon: "🤖",
   },
 ];
@@ -577,7 +577,7 @@ const Portfolio = () => {
             </h1>
 
             <p className={`text-lg md:text-xl text-gray-200 font-medium mb-2 ${animateIn(heroInView, 'delay-200')}`}>
-              Scholars CS & Engineering @ The Ohio State University
+              Scholars CSE & Business @ The Ohio State University
             </p>
             <p className={`text-base text-gray-300 mb-10 ${animateIn(heroInView, 'delay-300')}`}>
               Aspiring AI/ML Engineer · Emerging Developer · Growth-Driven Learner
@@ -623,7 +623,7 @@ const Portfolio = () => {
               <div className={`md:col-span-3 bg-black/40 backdrop-blur-xl rounded-2xl p-8 border border-white/20 space-y-5 text-gray-100 leading-relaxed ${animateIn(aboutInView, 'delay-100')}`}>
                 <p>
                   Hi! I'm a freshman <span className="text-emerald-300 font-bold">Scholars Computer Science & Engineering</span> student
-                  with a minor in Business Analytics at The Ohio State University.
+                  with a minor in Business at The Ohio State University.
                 </p>
                 <p>
                   I'm passionate about technology and how data structures and algorithms shape the systems we use daily.
