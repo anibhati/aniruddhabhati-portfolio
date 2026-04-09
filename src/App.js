@@ -273,10 +273,10 @@ const projects = [
   },
   {
     id: 3,
-    title: "GeoLocation ML Model",
-    description: "Working on a machine learning model that predicts image locations by analyzing a large dataset of geotagged photos using Google Maps integration.",
+    title: "Deaf-focused safety alert machine learning model",
+    description: "Building a deaf safey alert system that uses random forest and urban sound classification to detect emergencies and alert deaf users",
     status: "In Progress",
-    tags: ["Machine Learning", "Python", "Google Maps API"],
+    tags: ["Machine Learning", "Python", "PyTorch", "LLMs"],
     icon: "🌍",
   },
   {
@@ -294,6 +294,15 @@ const projects = [
     status: "Completed",
     tags: ["iOS Development", "SwiftUI", "Xcode"],
     icon: "📱",
+  },
+  {
+    id: 2,
+    title: "NYC Housing Data Analysis Project",
+    description: "Analyzed NYC housing sales data using SQL queries in Databricks, performed data cleaning and trend analysis, and built a public web application(HTML/CSS/Javascript) to visualize insights and allow users to explore housing price patters across different categories of their choosing.  ",
+    status: "Completed",
+    tags: ["AI","Databricks", "SQL", "Data Analysis", "HTML/CSS/JS"],
+    link: "https://neura-learn-2434dc60.base44.app/dashboard",
+    icon: "🤖",
   },
 ];
 
