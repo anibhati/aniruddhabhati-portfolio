@@ -747,7 +747,7 @@ const Portfolio = () => {
               <div className="flex justify-center gap-4">
                 {[
                   { href: "https://github.com/anibhati", icon: <Github size={20} />, label: "GitHub" },
-                  { href: "https://www.linkedin.com/in/aniruddha-bhati-729771377/", icon: <Linkedin size={20} />, label: "LinkedIn" },
+                  { href: "https://www.linkedin.com/in/aniruddha-singh-bhati-729771377/", icon: <Linkedin size={20} />, label: "LinkedIn" },
                 ].map(({ href, icon, label }) => (
                   <a
                     key={label}
