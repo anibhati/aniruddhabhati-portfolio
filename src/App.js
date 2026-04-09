@@ -223,7 +223,7 @@ const SplashScreen = ({ onEnter }) => (
         </span>
       </h2>
       <p className="text-gray-300 text-base mb-12 mt-4 font-medium">
-        CS & Engineering · AI/ML · Developer
+        CS & Business · AI/ML · Developer
       </p>
       <button
         onClick={onEnter}
