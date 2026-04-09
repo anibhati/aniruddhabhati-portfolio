@@ -413,6 +413,172 @@ const categoryColors = {
 };
 
 // ============================================================
+// EXPERIENCE DATA  ← NEW
+// ============================================================
+const experiences = [
+  {
+    id: 1,
+    title: "Undergraduate Research Assistant",
+    company: "OSU Comprehensive Cancer Center / James Cancer Hospital",
+    dateRange: "Apr 2026 – Present",
+    location: "Columbus, OH",
+    bullets: [
+      "Developing the LifeScale platform to support clinical research workflows and patient data analysis.",
+      "Writing SQL queries against Epic Cosmos de-identified datasets to extract and structure patient data.",
+      "Collaborating with research scientists to surface clinical insights that inform doctors' decision-making.",
+    ],
+  },
+  {
+    id: 2,
+    title: "Student Assistant – Research Commons",
+    company: "The Ohio State University",
+    dateRange: "Aug 2025 – Present",
+    location: "Columbus, OH",
+    bullets: [
+      "Designed and developed an improved research library website in a team of two, enhancing UX and navigation.",
+      "Coordinated and supported research and technology events for the university community.",
+      "Managed concierge desk operations, assisting students and faculty with research resources.",
+    ],
+  },
+  {
+    id: 3,
+    title: "Server / Team Member",
+    company: "Aladdin's Eatery",
+    dateRange: "Jun 2024 – Aug 2025",
+    location: "Powell, OH",
+    bullets: [
+      "Explained menu items, took orders, and operated the register in a fast-paced dining environment.",
+      "Managed and resolved customer complaints with professionalism and care.",
+      "Maintained friendly, professional customer interactions to ensure a positive dining experience.",
+    ],
+  },
+];
+
+// ============================================================
+// EXPERIENCE ENTRY  ← NEW
+// Uses three separate useInView hooks (left, right, mobile) so
+// the IntersectionObserver fires correctly for whichever side
+// actually renders — fixing the "invisible card" bug.
+// ============================================================
+const ExperienceEntry = ({ experience, index }) => {
+  const [leftRef,   leftInView]   = useInView();
+  const [rightRef,  rightInView]  = useInView();
+  const [mobileRef, mobileInView] = useInView();
+  const isLeft = index % 2 === 0;
+
+  const CardInner = () => (
+    <>
+      <h3 className="text-lg font-bold text-white leading-snug mb-1">{experience.title}</h3>
+      <p className="text-emerald-400 font-semibold text-sm mb-1">{experience.company}</p>
+      <p className="text-gray-500 text-xs mb-4">{experience.location}</p>
+      <ul className="space-y-2">
+        {experience.bullets.map((b, i) => (
+          <li key={i} className="flex items-start gap-2 text-gray-300 text-sm leading-relaxed">
+            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+            {b}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+
+  return (
+    <div className="relative w-full">
+
+      {/* ── DESKTOP: alternating left / right ── */}
+      <div className="hidden md:grid md:grid-cols-[1fr_auto_1fr] w-full items-start">
+
+        {/* LEFT slot */}
+        <div className="flex justify-end pr-8 py-6">
+          {isLeft ? (
+            <div
+              ref={leftRef}
+              className="group relative w-full max-w-sm bg-white/5 backdrop-blur-lg rounded-2xl p-6
+                border border-white/10 border-l-2 border-l-emerald-500/50
+                hover:border-emerald-400/40 hover:shadow-xl hover:shadow-emerald-500/10
+                hover:-translate-y-1 transition-all duration-300"
+              style={{
+                opacity: leftInView ? 1 : 0,
+                transform: leftInView ? 'translateX(0)' : 'translateX(-48px)',
+                transition: 'opacity 0.7s ease, transform 0.7s ease',
+              }}
+            >
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+              <div className="relative z-10"><CardInner /></div>
+            </div>
+          ) : (
+            <div ref={leftRef} className="w-full max-w-sm" />
+          )}
+        </div>
+
+        {/* CENTER spine */}
+        <div className="flex flex-col items-center">
+          <div className="w-px flex-1 bg-emerald-500/30 min-h-[2rem]" />
+          <div className="w-4 h-4 rounded-full bg-emerald-400 ring-4 ring-[#030d06] z-10 flex-shrink-0" />
+          <div className="my-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold whitespace-nowrap">
+            {experience.dateRange}
+          </div>
+          <div className="w-px flex-1 bg-emerald-500/30 min-h-[2rem]" />
+        </div>
+
+        {/* RIGHT slot */}
+        <div className="flex justify-start pl-8 py-6">
+          {!isLeft ? (
+            <div
+              ref={rightRef}
+              className="group relative w-full max-w-sm bg-white/5 backdrop-blur-lg rounded-2xl p-6
+                border border-white/10 border-r-2 border-r-emerald-500/50
+                hover:border-emerald-400/40 hover:shadow-xl hover:shadow-emerald-500/10
+                hover:-translate-y-1 transition-all duration-300"
+              style={{
+                opacity: rightInView ? 1 : 0,
+                transform: rightInView ? 'translateX(0)' : 'translateX(48px)',
+                transition: 'opacity 0.7s ease, transform 0.7s ease',
+              }}
+            >
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+              <div className="relative z-10"><CardInner /></div>
+            </div>
+          ) : (
+            <div ref={rightRef} className="w-full max-w-sm" />
+          )}
+        </div>
+      </div>
+
+      {/* ── MOBILE: all stacked left ── */}
+      <div className="flex md:hidden w-full items-start gap-4 py-4">
+        <div className="flex flex-col items-center flex-shrink-0" style={{ width: 28 }}>
+          <div className="w-px flex-1 bg-emerald-500/30 min-h-[1rem]" />
+          <div className="w-3 h-3 rounded-full bg-emerald-400 ring-4 ring-[#030d06] flex-shrink-0" />
+          <div className="w-px flex-1 bg-emerald-500/30 min-h-[1rem]" />
+        </div>
+        <div
+          ref={mobileRef}
+          className="group relative flex-1 bg-white/5 backdrop-blur-lg rounded-2xl p-5
+            border border-white/10 border-l-2 border-l-emerald-500/50
+            hover:border-emerald-400/40 hover:shadow-xl hover:shadow-emerald-500/10
+            transition-all duration-300"
+          style={{
+            opacity: mobileInView ? 1 : 0,
+            transform: mobileInView ? 'translateX(0)' : 'translateX(-32px)',
+            transition: 'opacity 0.7s ease, transform 0.7s ease',
+          }}
+        >
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+          <div className="relative z-10">
+            <div className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold mb-3">
+              {experience.dateRange}
+            </div>
+            <CardInner />
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
+// ============================================================
 // MAIN PORTFOLIO COMPONENT
 // ============================================================
 const Portfolio = () => {
@@ -446,6 +612,7 @@ const Portfolio = () => {
 
   const [heroRef, heroInView] = useInView();
   const [aboutRef, aboutInView] = useInView();
+  const [expHeaderRef, expHeaderInView] = useInView();  // ← NEW
   const [contactRef, contactInView] = useInView();
 
   return (
@@ -488,7 +655,7 @@ const Portfolio = () => {
               </button>
 
               <div className="hidden md:flex items-center gap-1">
-                {['home', 'about', 'projects', 'contact'].map((section) => (
+                {['home', 'about', 'experience', 'projects', 'contact'].map((section) => (
                   <button
                     key={section}
                     onClick={() => scrollToSection(section)}
@@ -516,7 +683,7 @@ const Portfolio = () => {
             mobileMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
           }`}>
             <div className="bg-black/80 backdrop-blur-xl border-t border-white/10 px-6 py-4 space-y-1">
-              {['home', 'about', 'projects', 'contact'].map((section) => (
+              {['home', 'about', 'experience', 'projects', 'contact'].map((section) => (
                 <button
                   key={section}
                   onClick={() => scrollToSection(section)}
@@ -681,6 +848,31 @@ const Portfolio = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* EXPERIENCE ← NEW SECTION */}
+        <section id="experience" className="min-h-screen flex items-center justify-center px-6 py-24">
+          <div className="max-w-5xl mx-auto w-full">
+
+            <div ref={expHeaderRef} className={animateIn(expHeaderInView)}>
+              <p className="text-emerald-400 text-sm font-bold tracking-widest uppercase mb-3 text-center">My Journey</p>
+              <h2
+                className="text-4xl md:text-6xl font-black mb-16 text-center tracking-tight text-white"
+                style={{ fontFamily: "'Syne', sans-serif" }}
+              >
+                Experience
+              </h2>
+            </div>
+
+            <div className="relative">
+              {/* Faint continuous spine line behind all entries, desktop only */}
+              <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-emerald-500/20 pointer-events-none" />
+              {experiences.map((exp, index) => (
+                <ExperienceEntry key={exp.id} experience={exp} index={index} />
+              ))}
+            </div>
+
           </div>
         </section>
 
