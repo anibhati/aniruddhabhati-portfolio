@@ -1,384 +1,727 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Mail, Github, Linkedin, X, ExternalLink, ChevronDown } from 'lucide-react';
+import {
+  Menu, X, Github, Linkedin, Mail, ArrowUpRight, ArrowDown,
+  Award, MapPin, GraduationCap, Cpu, Briefcase, Sparkles,
+} from 'lucide-react';
 
-// ============================================================
-// CUSTOM HOOK - useInView
-// ============================================================
-const useInView = () => {
-  const ref = useRef(null);
-  const [inView, setInView] = useState(false);
+/* ============================================================
+   THEME + GLOBAL CSS
+   ============================================================ */
+const GlobalStyle = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root{
+      --bg:#08080b;
+      --panel:rgba(255,255,255,0.025);
+      --line:rgba(255,255,255,0.10);
+      --line-soft:rgba(255,255,255,0.06);
+      --ink:#f1f1f5;
+      --muted:#8b8b96;
+      --faint:#5b5b66;
+      --accent:#f3b34a;
+      --accent-bright:#ffc566;
+      --accent-soft:rgba(243,179,74,0.13);
+      /* live, scroll-driven hue (updated from JS) */
+      --live:#f3b34a;
+      --live-2:#5e9eff;
+      --display:'Syne',system-ui,sans-serif;
+      --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    }
+    .ab-root{background:var(--bg);color:var(--ink);font-family:var(--sans);}
+    .ab-root ::selection{background:var(--accent);color:#1a1300;}
+    .ab-display{font-family:var(--display);}
+    .ab-mono{font-family:var(--mono);}
+    .ab-link{position:relative;}
+    .ab-link::after{content:'';position:absolute;left:0;bottom:-2px;height:1px;width:0;background:var(--accent);transition:width .3s ease;}
+    .ab-link:hover::after{width:100%;}
+
+    @keyframes ab-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+    @keyframes ab-pulse{0%,100%{opacity:.5}50%{opacity:1}}
+    @keyframes ab-drift{0%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,-30px) scale(1.12)}100%{transform:translate(0,0) scale(1)}}
+    @keyframes ab-drift2{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-50px,40px) scale(1.18)}100%{transform:translate(0,0) scale(1)}}
+    @keyframes ab-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+    @keyframes ab-marquee-rev{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+    @keyframes ab-shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+    @keyframes ab-rise{from{opacity:0;transform:translateY(110%)}to{opacity:1;transform:translateY(0)}}
+
+    .ab-marquee-track{display:inline-flex;white-space:nowrap;will-change:transform;}
+    .ab-shine{
+      background:linear-gradient(100deg,var(--ink) 0%,var(--ink) 40%,var(--accent-bright) 50%,var(--ink) 60%,var(--ink) 100%);
+      background-size:200% 100%;
+      -webkit-background-clip:text;background-clip:text;color:transparent;
+      animation:ab-shimmer 5s linear infinite;
+    }
+
+    .ab-root::-webkit-scrollbar{width:10px}
+    .ab-root::-webkit-scrollbar-track{background:var(--bg)}
+    .ab-root::-webkit-scrollbar-thumb{background:#23232a;border-radius:8px;border:2px solid var(--bg)}
+    .ab-root::-webkit-scrollbar-thumb:hover{background:#33333d}
+
+    @media (prefers-reduced-motion: reduce){ *{animation:none!important;} }
+  `}</style>
+);
+
+/* ============================================================
+   SHARED LIVE STATE (no re-render spam)
+   - view.scroll: 0..1 scroll progress -> drives background color
+   ============================================================ */
+const view = { scroll: 0 };
+
+/* color journey the background travels as you scroll */
+const PALETTE = [
+  [243, 179, 74],   // gold            (top — brand anchor)
+  [214, 158, 92],   // warm bronze
+  [120, 150, 168],  // muted steel
+  [78, 132, 150],   // deep slate-teal (bottom)
+];
+
+const lerpColor = (t) => {
+  const c = Math.max(0, Math.min(1, t)) * (PALETTE.length - 1);
+  const i = Math.floor(c);
+  const f = c - i;
+  const a = PALETTE[i];
+  const b = PALETTE[Math.min(i + 1, PALETTE.length - 1)];
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * f),
+    Math.round(a[1] + (b[1] - a[1]) * f),
+    Math.round(a[2] + (b[2] - a[2]) * f),
+  ];
+};
+const rgba = ([r, g, b], a) => `rgba(${r},${g},${b},${a})`;
+
+/* ============================================================
+   LIVE BACKGROUND — drifting glows + particle constellation
+   that both recolor based on scroll position.
+   ============================================================ */
+const LiveBackground = () => {
+  const canvasRef = useRef(null);
+  const blobA = useRef(null);
+  const blobB = useRef(null);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setInView(true);
-        observer.disconnect();
-      }
-    }, { threshold: 0.15 });
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    let w, h, dpr, parts = [], raf;
 
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
+    const resize = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = window.innerWidth; h = window.innerHeight;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const count = Math.min(90, Math.floor((w * h) / 16000));
+      parts = Array.from({ length: count }, () => ({
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
+        r: Math.random() * 1.6 + 0.6,
+      }));
+    };
+
+    const draw = () => {
+      // current scroll-driven color (kept in one tonal family)
+      const cA = lerpColor(view.scroll);
+      const cB = lerpColor(Math.min(view.scroll + 0.25, 1));
+
+      // recolor ambient glows — soft and atmospheric, never loud
+      if (blobA.current) blobA.current.style.background = `radial-gradient(circle, ${rgba(cA, 0.11)}, transparent 70%)`;
+      if (blobB.current) blobB.current.style.background = `radial-gradient(circle, ${rgba(cB, 0.07)}, transparent 72%)`;
+      document.documentElement.style.setProperty('--live', `rgb(${cA[0]},${cA[1]},${cA[2]})`);
+
+      ctx.clearRect(0, 0, w, h);
+
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < -20) p.x = w + 20; if (p.x > w + 20) p.x = -20;
+        if (p.y < -20) p.y = h + 20; if (p.y > h + 20) p.y = -20;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.16)';
+        ctx.fill();
+
+        // whisper-faint links between nearby dots (no cursor interaction)
+        for (let j = i + 1; j < parts.length; j++) {
+          const q = parts[j];
+          const lx = p.x - q.x, ly = p.y - q.y;
+          const ld = lx * lx + ly * ly;
+          if (ld < 9000) {
+            ctx.strokeStyle = rgba(cA, (1 - ld / 9000) * 0.09);
+            ctx.lineWidth = 0.5;
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+          }
+        }
+      }
+      raf = requestAnimationFrame(draw);
+    };
+
+    resize();
+    draw();
+    window.addEventListener('resize', resize);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
   }, []);
 
+  return (
+    <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+      {/* grid texture */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)',
+        backgroundSize: '26px 26px',
+        maskImage: 'radial-gradient(ellipse 120% 80% at 50% 30%, #000 30%, transparent 95%)',
+        WebkitMaskImage: 'radial-gradient(ellipse 120% 80% at 50% 30%, #000 30%, transparent 95%)',
+      }} />
+      {/* recoloring glows */}
+      <div ref={blobA} style={{ position: 'absolute', top: '-14%', right: '-10%', width: 720, height: 720, borderRadius: '50%', filter: 'blur(10px)', animation: 'ab-drift 28s ease-in-out infinite' }} />
+      <div ref={blobB} style={{ position: 'absolute', bottom: '-18%', left: '-12%', width: 640, height: 640, borderRadius: '50%', filter: 'blur(10px)', animation: 'ab-drift2 34s ease-in-out infinite' }} />
+      {/* constellation */}
+      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0 }} />
+    </div>
+  );
+};
+
+/* ============================================================
+   SCROLL PROGRESS BAR (tints with the live color)
+   ============================================================ */
+const ScrollProgress = () => {
+  const [p, setP] = useState(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      setP(max > 0 ? (h.scrollTop / max) * 100 : 0);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 2.5, zIndex: 60, background: 'transparent' }}>
+      <div style={{ height: '100%', width: `${p}%`, background: 'linear-gradient(90deg,var(--accent),var(--live))', boxShadow: '0 0 12px var(--live)', transition: 'width .1s linear' }} />
+    </div>
+  );
+};
+
+/* ============================================================
+   SCROLL REVEAL
+   ============================================================ */
+const useInView = (threshold = 0.15) => {
+  const ref = useRef(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setInView(true); obs.disconnect(); }
+    }, { threshold });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [threshold]);
   return [ref, inView];
 };
 
-const animateIn = (inView, delay = '') =>
-  `transition-all duration-1000 ${delay} ${
-    inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-  }`;
-
-// ============================================================
-// TYPEWRITER
-// ============================================================
-const TypewriterEffect = ({ text, speed = 80, className = "" }) => {
-  const [displayText, setDisplayText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(() => {
-    if (currentIndex < text.length) {
-      const timeout = setTimeout(() => {
-        setDisplayText(prev => prev + text[currentIndex]);
-        setCurrentIndex(prev => prev + 1);
-      }, speed);
-      return () => clearTimeout(timeout);
-    }
-  }, [currentIndex, text, speed]);
-
-  return (
-    <span className={className}>
-      {displayText}
-      <span className="animate-pulse text-emerald-400">|</span>
-    </span>
-  );
-};
-
-// ============================================================
-// PARTICLE BACKGROUND
-// ============================================================
-const ParticleBackground = () => {
-  const particles = Array.from({ length: 60 }, (_, i) => ({
-    id: i,
-    left: `${Math.random() * 100}%`,
-    top: `${Math.random() * 100}%`,
-    size: Math.random() > 0.8 ? 2 : 1,
-    delay: `${Math.random() * 4}s`,
-    duration: `${2 + Math.random() * 3}s`,
-  }));
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          className="absolute rounded-full bg-emerald-400/20 animate-pulse"
-          style={{
-            left: p.left,
-            top: p.top,
-            width: p.size,
-            height: p.size,
-            animationDelay: p.delay,
-            animationDuration: p.duration,
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
-// ============================================================
-// PHOTO BACKGROUND — Updated for better visibility
-// ============================================================
-const PhotoBackground = ({ opacity = 0.45 }) => (
-  <div
-    className="fixed inset-0 pointer-events-none"
-    style={{ zIndex: 0 }}
-  >
-    <img
-      src="/jeremy-bishop-uAfZBP-GtiA-unsplash.jpg"
-      alt=""
-      aria-hidden="true"
-      style={{
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
-        objectPosition: 'center',
-        opacity: opacity,
-        filter: 'saturate(0.9) brightness(0.75)',
-      }}
-    />
-    {/* Lightened gradient overlay to let the photo shine through */}
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        background: `
-          linear-gradient(to bottom,
-            rgba(3,13,6,0.65) 0%,
-            rgba(3,13,6,0.2) 40%,
-            rgba(3,13,6,0.2) 60%,
-            rgba(3,13,6,0.7) 100%
-          )
-        `,
-      }}
-    />
-    {/* Softer Vignette */}
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        background: `
-          radial-gradient(ellipse at center,
-            transparent 50%,
-            rgba(3,13,6,0.5) 100%
-          )
-        `,
-      }}
-    />
-  </div>
-);
-
-// ============================================================
-// SVG LEAF SILHOUETTES
-// ============================================================
-const LeafBackground = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    style={{
-      position: 'fixed',
-      inset: 0,
-      width: '100%',
-      height: '100%',
-      pointerEvents: 'none',
-      zIndex: 1,
-      opacity: 0.05,
-    }}
-  >
-    <ellipse cx="80" cy="120" rx="18" ry="55" stroke="#4ade80" strokeWidth="1" fill="none"
-      transform="rotate(-30, 80, 120)" />
-    <ellipse cx="120" cy="80" rx="14" ry="42" stroke="#34d399" strokeWidth="1" fill="none"
-      transform="rotate(15, 120, 80)" />
-    <ellipse cx="85%" cy="60" rx="20" ry="60" stroke="#4ade80" strokeWidth="1" fill="none"
-      transform="rotate(25, 1200, 60)" />
-    <ellipse cx="92%" cy="130" rx="12" ry="38" stroke="#6ee7b7" strokeWidth="1" fill="none"
-      transform="rotate(-15, 1270, 130)" />
-    <ellipse cx="40" cy="45%" rx="16" ry="50" stroke="#34d399" strokeWidth="1" fill="none"
-      transform="rotate(-45, 40, 500)" />
-    <ellipse cx="97%" cy="50%" rx="22" ry="65" stroke="#4ade80" strokeWidth="1" fill="none"
-      transform="rotate(20, 1300, 500)" />
-    <ellipse cx="100" cy="85%" rx="18" ry="52" stroke="#6ee7b7" strokeWidth="1" fill="none"
-      transform="rotate(35, 100, 800)" />
-    <ellipse cx="55" cy="90%" rx="12" ry="36" stroke="#34d399" strokeWidth="1" fill="none"
-      transform="rotate(-20, 55, 850)" />
-    <ellipse cx="88%" cy="88%" rx="20" ry="58" stroke="#4ade80" strokeWidth="1" fill="none"
-      transform="rotate(-30, 1200, 820)" />
-    <ellipse cx="52%" cy="95%" rx="15" ry="44" stroke="#6ee7b7" strokeWidth="1" fill="none"
-      transform="rotate(10, 700, 900)" />
-    <path d="M 0 400 Q 60 350 40 300 Q 20 250 70 200" stroke="#4ade80" strokeWidth="1" fill="none" />
-    <path d="M 100% 300 Q 1240 350 1260 400 Q 1280 450 1230 500" stroke="#34d399" strokeWidth="1" fill="none" />
-  </svg>
-);
-
-// ============================================================
-// SPLASH SCREEN
-// ============================================================
-const SplashScreen = ({ onEnter }) => (
-  <div
-    className="fixed inset-0 z-[100] flex flex-col items-center justify-center"
-    style={{ background: '#030d06' }}
-  >
-    <PhotoBackground opacity={0.35} />
-    <LeafBackground />
-
-    <div className="relative z-10 text-center px-6">
-      <div
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 360,
-          height: 360,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }}
-      />
-
-      <p className="text-emerald-500 text-sm font-semibold tracking-widest uppercase mb-6 opacity-80">
-        Welcome
-      </p>
-      <h1
-        className="text-5xl md:text-7xl font-black text-white mb-4 tracking-tight leading-tight"
-        style={{ fontFamily: "'Syne', sans-serif" }}
-      >
-        Hello,
-      </h1>
-      <h2
-        className="text-3xl md:text-5xl font-bold mb-3 tracking-tight"
-        style={{ fontFamily: "'Syne', sans-serif" }}
-      >
-        <span className="bg-gradient-to-r from-emerald-300 via-emerald-200 to-emerald-500 bg-clip-text text-transparent">
-          Welcome to Aniruddha's Page
-        </span>
-      </h2>
-      <p className="text-gray-300 text-base mb-12 mt-4 font-medium">
-        CS & Business · AI/ML · Developer
-      </p>
-      <button
-        onClick={onEnter}
-        className="group px-10 py-4 rounded-full font-semibold text-white
-          bg-gradient-to-r from-emerald-600 to-emerald-800
-          hover:from-emerald-500 hover:to-emerald-700
-          hover:shadow-lg hover:shadow-emerald-500/30
-          hover:scale-105 transition-all duration-300 text-base tracking-wide"
-        style={{ fontFamily: "'Syne', sans-serif" }}
-      >
-        Enter
-        <span className="ml-2 inline-block group-hover:translate-x-1 transition-transform duration-200">→</span>
-      </button>
-      <div className="mt-10 flex justify-center gap-2">
-        {[0, 1, 2].map(i => (
-          <span
-            key={i}
-            className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 animate-pulse"
-            style={{ animationDelay: `${i * 300}ms` }}
-          />
-        ))}
-      </div>
-    </div>
-  </div>
-);
-
-// ============================================================
-// PROJECT DATA
-// ============================================================
-const projects = [
-  {
-    id: 1,
-    title: "OSU Research Commons Library Website",
-    description: "Developing and optimizing the OSU Research Library website with a team to improve user experience and navigation.",
-    status: "Completed",
-    tags: ["Web Development", "UX/UI", "Team Project"],
-    icon: "🏛️",
-  },
-  {
-    id: 2,
-    title: "AI Study Website",
-    description: "Collaborated at Hack OH/IO Hackathon to develop an AI-powered study website that converts video, image, and text inputs into review guides and flashcards using the Base44 tech stack.",
-    status: "Completed",
-    tags: ["AI", "React", "Machine Learning"],
-    link: "https://neura-learn-2434dc60.base44.app/dashboard",
-    icon: "🤖",
-  },
-  {
-    id: 3,
-    title: "Deaf-focused safety alert machine learning model",
-    description: "Building a deaf safey alert system that uses random forest and urban sound classification to detect emergencies and alert deaf users",
-    status: "In Progress",
-    tags: ["Machine Learning", "Python", "PyTorch", "LLMs"],
-    icon: "🌍",
-  },
-  {
-    id: 4,
-    title: "Personal Portfolio Website",
-    description: "Created this personal portfolio website to showcase projects and skills using React and Tailwind CSS.",
-    status: "Completed",
-    tags: ["Web Development", "React", "Tailwind CSS"],
-    icon: "💼",
-  },
-  {
-    id: 5,
-    title: "iOS Expense Tracker App",
-    description: "Developed and designed an iOS expense tracker app using SwiftUI and Xcode to help users manage their finances. Leveraged AI-assisted tools to accelerate SwiftUI best practices.",
-    status: "Completed",
-    tags: ["iOS Development", "SwiftUI", "Xcode"],
-    icon: "📱",
-  },
-  {
-    id: 2,
-    title: "NYC Housing Data Analysis Project",
-    description: "Analyzed NYC housing sales data using SQL queries in Databricks, performed data cleaning and trend analysis, and built a public web application(HTML/CSS/Javascript) to visualize insights and allow users to explore housing price patters across different categories of their choosing.  ",
-    status: "Completed",
-    tags: ["AI","Databricks", "SQL", "Data Analysis", "HTML/CSS/JS"],
-    link: "https://data-io-2026-dashboard.pages.dev/dashboard",
-    icon: "🤖",
-  },
-];
-
-// ============================================================
-// PROJECT CARD
-// ============================================================
-const ProjectCard = ({ project, index }) => {
+const Reveal = ({ children, delay = 0, y = 24, className = '' }) => {
   const [ref, inView] = useInView();
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const delays = ['', 'delay-100', 'delay-200', 'delay-300', 'delay-[400ms]'];
-
-  const handleMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const rotateX = ((y / rect.height) - 0.5) * -10;
-    const rotateY = ((x / rect.width) - 0.5) * 10;
-    setTilt({ x: rotateX, y: rotateY });
-  };
-
-  const handleMouseLeave = () => setTilt({ x: 0, y: 0 });
-
   return (
     <div
       ref={ref}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      className={className}
       style={{
-        transform: `perspective(800px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-        transition: 'transform 0.15s ease',
+        opacity: inView ? 1 : 0,
+        transform: inView ? 'translateY(0)' : `translateY(${y}px)`,
+        transition: `opacity .8s cubic-bezier(.2,.7,.2,1) ${delay}ms, transform .8s cubic-bezier(.2,.7,.2,1) ${delay}ms`,
       }}
-      className={`group relative bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10
-        hover:border-emerald-400/40 hover:-translate-y-1
-        hover:shadow-xl hover:shadow-emerald-500/10
-        ${animateIn(inView, delays[index % 5])}`}
     >
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      {children}
+    </div>
+  );
+};
 
-      <div className="relative z-10">
-        <div className="flex items-start justify-between mb-4">
-          <span className="text-3xl">{project.icon}</span>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold tracking-wide ${
-            project.status === 'Completed'
-              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
-              : 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/25'
-          }`}>
-            {project.status}
-          </span>
-        </div>
+/* ============================================================
+   COUNT-UP
+   ============================================================ */
+const CountUp = ({ value }) => {
+  const [ref, inView] = useInView(0.4);
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!inView) return;
+    const target = parseInt(value, 10) || 0;
+    if (!target) { setN(value); return; }
+    let start = null;
+    const step = (t) => {
+      if (!start) start = t;
+      const p = Math.min((t - start) / 1100, 1);
+      setN(Math.round((1 - Math.pow(1 - p, 3)) * target));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [inView, value]);
+  return <span ref={ref}>{n}</span>;
+};
 
-        <h3 className="text-lg font-bold mb-3 text-white group-hover:text-emerald-300 transition-colors leading-snug">
-          {project.title}
-        </h3>
+/* ============================================================
+   MAGNETIC
+   ============================================================ */
+const Magnetic = ({ children, strength = 0.4, className = '', style = {} }) => {
+  const ref = useRef(null);
+  const onMove = (e) => {
+    const el = ref.current; if (!el) return;
+    const r = el.getBoundingClientRect();
+    const x = e.clientX - (r.left + r.width / 2);
+    const y = e.clientY - (r.top + r.height / 2);
+    el.style.transform = `translate(${x * strength}px, ${y * strength}px)`;
+  };
+  const reset = () => { if (ref.current) ref.current.style.transform = 'translate(0,0)'; };
+  return (
+    <div ref={ref} className={className} onMouseMove={onMove} onMouseLeave={reset}
+      style={{ display: 'inline-block', transition: 'transform .25s cubic-bezier(.2,.7,.2,1)', ...style }}>
+      {children}
+    </div>
+  );
+};
 
-        <p className="text-gray-300 mb-4 text-sm leading-relaxed">
-          {project.description}
-        </p>
+/* ============================================================
+   DATA
+   ============================================================ */
+const NAV = ['home', 'about', 'experience', 'projects', 'contact'];
 
-        <div className="flex flex-wrap gap-2 mb-4">
-          {project.tags.map((tag) => (
-            <span key={tag} className="px-2 py-1 bg-slate-700/60 rounded-md text-xs text-slate-300 border border-white/5">
-              {tag}
-            </span>
+const EXPERIENCES = [
+  {
+    role: 'IT Intern · Software Development',
+    org: 'Winterset Law Group',
+    meta: 'Special Counsel to the Ohio Attorney General · Powell, OH',
+    date: 'May 2026 — Present',
+    current: true,
+    bullets: [
+      'Built a client-facing progressive web app (React, Node.js, Vercel) that turns Ohio state tax-debt resolution into a 3-minute online intake, replacing a multi-form, in-office process.',
+      'Implemented payment-plan enrollment, dispute submission, and attorney scheduling with secure authentication, status tracking, and account lookup that pre-populates client data.',
+      'Architected the app to be installable on mobile as the foundation for a planned native iOS rollout in SwiftUI.',
+    ],
+  },
+  {
+    role: 'Undergraduate Research Assistant',
+    org: 'The OSU James Cancer Center',
+    meta: 'Columbus, OH',
+    date: 'Apr 2026 — Present',
+    current: true,
+    bullets: [
+      'Developing the LifeScale platform to streamline access to large-scale hospital and clinical data.',
+      'Writing SQL against de-identified Epic Cosmos datasets to surface trends and make insights accessible to physicians.',
+      'Collaborating with research scientists to translate clinical data into decision-ready findings.',
+    ],
+  },
+  {
+    role: 'Student Assistant · Research Commons',
+    org: 'The Ohio State University',
+    meta: 'Columbus, OH',
+    date: 'Aug 2025 — Present',
+    current: false,
+    bullets: [
+      'Redesigned and rebuilt the research library website in a two-person team, improving usability and accessibility.',
+      'Coordinated in-person and online research & technology events for the university community.',
+      'Ran concierge desk operations, helping students and faculty navigate research resources.',
+    ],
+  },
+  {
+    role: 'Server · Team Member',
+    org: "Aladdin's Eatery",
+    meta: 'Powell, OH',
+    date: 'Jun 2024 — Aug 2025',
+    current: false,
+    bullets: [
+      'Took orders, ran the register, and supported food prep in a fast-paced environment.',
+      'Resolved customer concerns with professionalism to keep service smooth and guests satisfied.',
+    ],
+  },
+];
+
+const PROJECTS = [
+  {
+    title: 'Winterset Law Group Web App',
+    desc: 'Client-facing PWA that streamlines Ohio state tax-debt resolution into a 3-minute online intake — payment plans, disputes, and attorney scheduling, with secure auth and account lookup.',
+    tags: ['React', 'Node.js', 'Vercel', 'PWA'],
+    status: 'In Progress',
+    featured: true,
+  },
+  {
+    title: 'SignalSpace — Safety Alert System',
+    desc: 'Real-time, deaf-focused safety system that classifies urban sounds to detect emergencies and alert users with hearing loss to nearby danger.',
+    tags: ['Machine Learning', 'Python', 'Random Forest', 'Audio'],
+    status: 'Completed',
+    award: '1st Place · BDAA Research Gala',
+    link: 'https://safety-alert-website.vercel.app/',
+    featured: true,
+  },
+  {
+    title: 'AI Study Website',
+    desc: 'Built at HackOhio: an AI study tool that turns video, image, and text inputs into review guides and flashcards.',
+    tags: ['AI', 'React', 'Base44'],
+    status: 'Completed',
+    link: 'https://neura-learn-2434dc60.base44.app/dashboard',
+  },
+  {
+    title: 'NYC Housing Data Analysis',
+    desc: 'Cleaned and analyzed NYC housing-sales data in Databricks + SQL, then shipped a public dashboard to explore price patterns across neighborhoods.',
+    tags: ['Databricks', 'SQL', 'Data Analysis', 'JS'],
+    status: 'Completed',
+    link: 'https://data-io-2026-dashboard.pages.dev/dashboard',
+  },
+  {
+    title: 'iOS Expense Tracker',
+    desc: 'A SwiftUI app to add, categorize, and review personal expenses, with local storage and a clean, intuitive interface.',
+    tags: ['SwiftUI', 'Swift', 'Xcode'],
+    status: 'Completed',
+    link: 'https://github.com/anibhati/expense-tracker-ios',
+  },
+  {
+    title: 'Personal Portfolio',
+    desc: 'This site — a React + Tailwind portfolio built to showcase my work and keep it current.',
+    tags: ['React', 'Tailwind CSS'],
+    status: 'Completed',
+    link: 'https://github.com/anibhati/aniruddhabhati-portfolio',
+  },
+];
+
+const SKILL_GROUPS = [
+  { label: 'Languages', items: ['Python', 'Java', 'Swift', 'SQL'] },
+  { label: 'Web', items: ['React', 'Next.js', 'Node.js', 'Tailwind CSS'] },
+  { label: 'AI & Data', items: ['Machine Learning', 'Databricks', 'Data Analysis'] },
+  { label: 'Mobile', items: ['SwiftUI', 'Xcode'] },
+];
+
+const SPECS = [
+  { icon: Cpu, label: 'Focus', value: 'AI / ML · Full-stack' },
+  { icon: GraduationCap, label: 'Education', value: 'B.S. CSE (AI) · Engineering Scholars' },
+  { icon: MapPin, label: 'Location', value: 'Columbus, OH' },
+  { icon: Briefcase, label: 'Currently', value: 'Intern @ Winterset · Research @ James' },
+];
+
+const SOCIAL = [
+  { icon: Github, label: 'GitHub', href: 'https://github.com/anibhati' },
+  { icon: Linkedin, label: 'LinkedIn', href: 'https://www.linkedin.com/in/aniruddha-singh-bhati-729771377/' },
+  { icon: Mail, label: 'Email', href: 'mailto:bhati.27@osu.edu' },
+];
+
+const MARQUEE_WORDS = ['MACHINE LEARNING', 'FULL-STACK', 'REACT', 'SWIFT', 'PYTHON', 'AUDIO AI', 'SQL', 'iOS'];
+
+/* ============================================================
+   SMALL PIECES
+   ============================================================ */
+const Kicker = ({ children }) => (
+  <span className="ab-mono" style={{ color: 'var(--accent)', fontSize: 12, letterSpacing: '0.18em' }}>{children}</span>
+);
+
+const SectionHeader = ({ index, kicker, title }) => (
+  <Reveal>
+    <div className="flex items-baseline gap-4 mb-12">
+      <span className="ab-mono" style={{ color: 'var(--faint)', fontSize: 14 }}>{index}</span>
+      <div>
+        <Kicker>{kicker}</Kicker>
+        <h2 className="ab-display" style={{ fontSize: 'clamp(2rem,5vw,3.25rem)', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1, marginTop: 8 }}>{title}</h2>
+      </div>
+    </div>
+  </Reveal>
+);
+
+/* ============================================================
+   KINETIC MARQUEE
+   ============================================================ */
+const Marquee = ({ words, reverse = false, speed = 28 }) => (
+  <div style={{ overflow: 'hidden', borderTop: '1px solid var(--line-soft)', borderBottom: '1px solid var(--line-soft)', padding: '22px 0', maskImage: 'linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)', WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)' }}>
+    <span className="ab-marquee-track" style={{ animation: `${reverse ? 'ab-marquee-rev' : 'ab-marquee'} ${speed}s linear infinite` }}>
+      {[...words, ...words].map((wd, i) => (
+        <span key={i} className="ab-display inline-flex items-center" style={{ fontSize: 'clamp(2rem,6vw,4.5rem)', fontWeight: 800, letterSpacing: '-0.02em', padding: '0 26px', color: 'transparent', WebkitTextStroke: '1px var(--line)' }}>
+          {wd}
+          <span style={{ margin: '0 26px', color: 'var(--accent)', WebkitTextStroke: '0', fontSize: '0.5em' }}>✦</span>
+        </span>
+      ))}
+    </span>
+  </div>
+);
+
+/* ============================================================
+   NAV
+   ============================================================ */
+const Nav = ({ active, go }) => {
+  const [scrolled, setScrolled] = useState(false);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  const jump = (s) => { go(s); setOpen(false); };
+  return (
+    <nav className="fixed top-0 left-0 w-full z-50" style={{
+      transition: 'all .4s ease',
+      background: scrolled ? 'rgba(8,8,11,0.72)' : 'transparent',
+      backdropFilter: scrolled ? 'blur(14px)' : 'none',
+      borderBottom: scrolled ? '1px solid var(--line-soft)' : '1px solid transparent',
+    }}>
+      <div className="max-w-6xl mx-auto px-6 lg:px-8 flex items-center justify-between" style={{ height: 68 }}>
+        <Magnetic strength={0.5}>
+          <button onClick={() => jump('home')} className="ab-display" style={{ fontWeight: 800, fontSize: 20, letterSpacing: '-0.03em' }}>
+            AB<span style={{ color: 'var(--accent)' }}>.</span>
+          </button>
+        </Magnetic>
+        <div className="hidden md:flex items-center" style={{ gap: 4 }}>
+          {NAV.map((s, i) => (
+            <button key={s} onClick={() => jump(s)} className="ab-mono"
+              style={{ padding: '8px 14px', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: active === s ? 'var(--accent)' : 'var(--muted)', transition: 'color .25s' }}
+              onMouseEnter={(e) => { if (active !== s) e.currentTarget.style.color = 'var(--ink)'; }}
+              onMouseLeave={(e) => { if (active !== s) e.currentTarget.style.color = 'var(--muted)'; }}>
+              <span style={{ color: 'var(--faint)', marginRight: 6 }}>0{i + 1}</span>{s}
+            </button>
           ))}
         </div>
+        <button className="md:hidden" onClick={() => setOpen(!open)} style={{ color: 'var(--ink)' }}>
+          {open ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      </div>
+      <div className="md:hidden overflow-hidden" style={{ transition: 'all .3s ease', maxHeight: open ? 320 : 0, background: 'rgba(8,8,11,0.95)', borderTop: open ? '1px solid var(--line-soft)' : 'none' }}>
+        {NAV.map((s) => (
+          <button key={s} onClick={() => jump(s)} className="ab-mono block w-full text-left" style={{ padding: '14px 28px', fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>{s}</button>
+        ))}
+      </div>
+    </nav>
+  );
+};
 
-        {project.link && (
-          <a
-            href={project.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20
-              border border-emerald-500/30 rounded-lg text-sm font-semibold text-emerald-400
-              transition-all hover:gap-3"
-          >
-            View Project <ExternalLink size={14} />
+/* ============================================================
+   HERO
+   ============================================================ */
+const Hero = ({ go }) => {
+  return (
+    <section id="home" className="relative min-h-screen flex items-center px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto w-full" style={{ paddingTop: 80, paddingBottom: 80 }}>
+        <div className="grid lg:grid-cols-12 gap-8 items-center">
+          <div className="lg:col-span-9">
+            <Reveal delay={0}>
+              <div className="flex items-center flex-wrap gap-x-5 gap-y-2 mb-7">
+                <Kicker>{'// COLUMBUS, OH'}</Kicker>
+                <span className="inline-flex items-center gap-2 ab-mono" style={{ fontSize: 12, color: 'var(--muted)' }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--accent)', animation: 'ab-pulse 2s infinite' }} />
+                  Open to internships &amp; opportunities
+                </span>
+              </div>
+            </Reveal>
+
+            <h1 className="ab-display" style={{ fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 0.92, fontSize: 'clamp(3rem,11vw,7.5rem)' }}>
+              <span style={{ display: 'block', overflow: 'hidden' }}>
+                <span style={{ display: 'inline-block', animation: 'ab-rise .9s cubic-bezier(.2,.8,.2,1) .15s both' }}>Aniruddha</span>
+              </span>
+              <span style={{ display: 'block', overflow: 'hidden' }}>
+                <span style={{ display: 'inline-block', animation: 'ab-rise .9s cubic-bezier(.2,.8,.2,1) .27s both' }}>Bhati<span style={{ color: 'var(--accent)' }}>.</span></span>
+              </span>
+            </h1>
+
+            <Reveal delay={240}>
+              <p className="ab-mono" style={{ marginTop: 26, fontSize: 14, letterSpacing: '0.04em', color: 'var(--ink)' }}>
+                Computer Science &amp; Business <span style={{ color: 'var(--faint)' }}>@</span> Ohio State
+              </p>
+            </Reveal>
+
+            <Reveal delay={340}>
+              <p style={{ marginTop: 18, maxWidth: 560, color: 'var(--muted)', fontSize: 18, lineHeight: 1.6 }}>
+                I build full-stack web apps and machine-learning tools. Lately that's a client portal for a
+                law firm and an audio safety system for people who are deaf or hard of hearing.
+              </p>
+            </Reveal>
+
+            <Reveal delay={440}>
+              <div className="flex flex-wrap items-center gap-4" style={{ marginTop: 36 }}>
+                <Magnetic strength={0.35}>
+                  <button onClick={() => go('projects')} className="ab-mono inline-flex items-center gap-2"
+                    style={{ padding: '14px 26px', borderRadius: 999, background: 'var(--accent)', color: '#1a1300', fontWeight: 700, fontSize: 13, letterSpacing: '0.06em', textTransform: 'uppercase', transition: 'background .25s, box-shadow .25s', boxShadow: '0 0 0 rgba(243,179,74,0)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-bright)'; e.currentTarget.style.boxShadow = '0 0 30px rgba(243,179,74,0.5)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 rgba(243,179,74,0)'; }}>
+                    View Work <ArrowUpRight size={16} />
+                  </button>
+                </Magnetic>
+                <Magnetic strength={0.35}>
+                  <button onClick={() => go('contact')} className="ab-mono inline-flex items-center gap-2"
+                    style={{ padding: '14px 26px', borderRadius: 999, border: '1px solid var(--line)', color: 'var(--ink)', fontWeight: 600, fontSize: 13, letterSpacing: '0.06em', textTransform: 'uppercase', transition: 'all .25s' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.color = 'var(--ink)'; }}>
+                    Get in Touch
+                  </button>
+                </Magnetic>
+                <div className="flex items-center gap-1" style={{ marginLeft: 6 }}>
+                  {SOCIAL.map(({ icon: Icon, href, label }) => (
+                    <Magnetic key={label} strength={0.5}>
+                      <a href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
+                        style={{ padding: 11, color: 'var(--muted)', transition: 'color .25s', display: 'inline-flex' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--muted)')}>
+                        <Icon size={19} />
+                      </a>
+                    </Magnetic>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+          </div>
+
+          <div className="hidden lg:flex lg:col-span-3 justify-end">
+            <Reveal delay={300}>
+              <div className="ab-display" aria-hidden="true" style={{ fontSize: 200, fontWeight: 800, lineHeight: 1, color: 'transparent', WebkitTextStroke: '1px var(--line)', animation: 'ab-float 7s ease-in-out infinite' }}>AB</div>
+            </Reveal>
+          </div>
+        </div>
+      </div>
+      <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: 28, color: 'var(--faint)', animation: 'ab-float 3s ease-in-out infinite' }}>
+        <ArrowDown size={20} />
+      </div>
+    </section>
+  );
+};
+
+/* ============================================================
+   ABOUT
+   ============================================================ */
+const About = () => (
+  <section id="about" className="px-6 lg:px-8 py-28">
+    <div className="max-w-6xl mx-auto w-full">
+      <SectionHeader index="01" kicker="WHO I AM" title="About" />
+      <div className="grid lg:grid-cols-12 gap-10">
+        <div className="lg:col-span-7">
+          <Reveal delay={80}>
+            <div style={{ fontSize: 18, lineHeight: 1.75, color: 'var(--muted)' }} className="space-y-5">
+              <p>
+                I'm a Computer Science &amp; Engineering student at Ohio State
+                <span style={{ color: 'var(--ink)' }}> (Engineering Scholars, AI specialization)</span>. Most of my
+                time goes into building software — right now a client-facing web app for a firm serving as Special
+                Counsel to the Ohio Attorney General, and SQL-driven clinical research at the James Cancer Center.
+              </p>
+              <p>
+                I'm most drawn to <span style={{ color: 'var(--accent)' }}>machine learning and AI</span> — especially
+                audio and safety systems. My team's safety model for people with hearing loss, SignalSpace, took
+                <span style={{ color: 'var(--ink)' }}> 1st place</span> at OSU's BDAA Research Gala.
+              </p>
+              <p>When I'm not in class, I'm usually working on a side project or picking up something new.</p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={160}>
+            <div className="grid grid-cols-3 gap-4" style={{ marginTop: 40, paddingTop: 28, borderTop: '1px solid var(--line-soft)' }}>
+              {[{ v: '1st', l: 'BDAA Research Gala' }, { v: '6', l: 'Projects built' }, { v: '2', l: 'Hackathons' }].map((s) => (
+                <div key={s.l}>
+                  <div className="ab-display" style={{ fontSize: 40, fontWeight: 800, color: 'var(--accent)', lineHeight: 1 }}><CountUp value={s.v} /></div>
+                  <div className="ab-mono" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s.l}</div>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+
+        <div className="lg:col-span-5">
+          <Reveal delay={120}>
+            <div style={{ border: '1px solid var(--line)', borderRadius: 18, padding: 26, background: 'var(--panel)' }}>
+              {SPECS.map(({ icon: Icon, label, value }, i) => (
+                <div key={label} className="flex items-start gap-3" style={{ padding: '14px 0', borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)' }}>
+                  <Icon size={17} style={{ color: 'var(--accent)', marginTop: 2, flexShrink: 0 }} />
+                  <div>
+                    <div className="ab-mono" style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--faint)' }}>{label}</div>
+                    <div style={{ fontSize: 14, color: 'var(--ink)', marginTop: 3 }}>{value}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+
+          <Reveal delay={200}>
+            <div style={{ marginTop: 22 }}>
+              {SKILL_GROUPS.map((g) => (
+                <div key={g.label} style={{ marginBottom: 16 }}>
+                  <div className="ab-mono" style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 9 }}>{g.label}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {g.items.map((s) => (
+                      <span key={s} className="ab-mono" style={{ fontSize: 12, padding: '6px 11px', borderRadius: 8, border: '1px solid var(--line)', color: 'var(--ink)', background: 'rgba(255,255,255,0.02)', transition: 'all .2s' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.color = 'var(--ink)'; }}>{s}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+/* ============================================================
+   EXPERIENCE
+   ============================================================ */
+const Experience = () => (
+  <section id="experience" className="px-6 lg:px-8 py-28">
+    <div className="max-w-6xl mx-auto w-full">
+      <SectionHeader index="02" kicker="MY JOURNEY" title="Experience" />
+      <div className="relative" style={{ marginLeft: 6 }}>
+        <div className="absolute" style={{ left: 5, top: 6, bottom: 6, width: 1, background: 'var(--line)' }} />
+        {EXPERIENCES.map((e, i) => (
+          <Reveal key={e.role} delay={i * 80}>
+            <div className="relative" style={{ paddingLeft: 34, paddingBottom: i === EXPERIENCES.length - 1 ? 0 : 44 }}>
+              <div className="absolute" style={{ left: 0, top: 4, width: 11, height: 11, borderRadius: '50%', background: e.current ? 'var(--accent)' : 'var(--bg)', border: `2px solid ${e.current ? 'var(--accent)' : 'var(--faint)'}`, boxShadow: e.current ? '0 0 0 4px var(--accent-soft)' : 'none', animation: e.current ? 'ab-pulse 2.4s infinite' : 'none' }} />
+              <div className="flex flex-wrap items-center gap-3 mb-2">
+                <span className="ab-mono" style={{ fontSize: 12, color: 'var(--accent)', letterSpacing: '0.05em' }}>{e.date}</span>
+                {e.current && <span className="ab-mono" style={{ fontSize: 10, padding: '3px 9px', borderRadius: 999, background: 'var(--accent-soft)', color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Now</span>}
+              </div>
+              <h3 className="ab-display" style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-0.01em' }}>{e.role}</h3>
+              <p style={{ color: 'var(--ink)', fontSize: 15, marginTop: 2 }}>{e.org}</p>
+              <p style={{ color: 'var(--faint)', fontSize: 13, marginTop: 2 }}>{e.meta}</p>
+              <ul className="space-y-2" style={{ marginTop: 14, maxWidth: 760 }}>
+                {e.bullets.map((b, j) => (
+                  <li key={j} className="flex items-start gap-3" style={{ color: 'var(--muted)', fontSize: 15, lineHeight: 1.6 }}>
+                    <span style={{ marginTop: 9, width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />{b}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+/* ============================================================
+   PROJECTS
+   ============================================================ */
+const ProjectCard = ({ p, index }) => {
+  const [hover, setHover] = useState(false);
+  const cardRef = useRef(null);
+  const onMove = (e) => {
+    const el = cardRef.current; if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', `${e.clientX - r.left}px`);
+    el.style.setProperty('--my', `${e.clientY - r.top}px`);
+  };
+  return (
+    <div ref={cardRef} onMouseMove={onMove} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ position: 'relative', height: '100%', padding: 26, borderRadius: 18, overflow: 'hidden', background: 'var(--panel)',
+        border: `1px solid ${hover ? 'var(--accent)' : p.featured ? 'rgba(243,179,74,0.28)' : 'var(--line)'}`,
+        transform: hover ? 'translateY(-5px)' : 'translateY(0)', transition: 'transform .3s cubic-bezier(.2,.7,.2,1), border-color .3s',
+        boxShadow: hover ? '0 18px 40px rgba(0,0,0,0.35)' : 'none' }}>
+      <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(260px circle at var(--mx,50%) var(--my,0%), rgba(243,179,74,0.10), transparent 70%)', opacity: hover ? 1 : 0, transition: 'opacity .3s' }} />
+      <div style={{ position: 'relative' }}>
+        <div className="flex items-start justify-between mb-5">
+          <span className="ab-mono" style={{ fontSize: 12, color: 'var(--faint)' }}>0{index + 1}</span>
+          {p.award ? (
+            <span className="ab-mono inline-flex items-center gap-1.5" style={{ fontSize: 10, padding: '4px 10px', borderRadius: 999, background: 'var(--accent-soft)', color: 'var(--accent)', letterSpacing: '0.06em', textTransform: 'uppercase' }}><Award size={11} /> {p.award}</span>
+          ) : (
+            <span className="ab-mono" style={{ fontSize: 10, padding: '4px 10px', borderRadius: 999, letterSpacing: '0.06em', textTransform: 'uppercase', background: p.status === 'Completed' ? 'rgba(255,255,255,0.05)' : 'var(--accent-soft)', color: p.status === 'Completed' ? 'var(--muted)' : 'var(--accent)', border: '1px solid var(--line-soft)' }}>{p.status}</span>
+          )}
+        </div>
+        <h3 className="ab-display" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', color: hover ? 'var(--accent)' : 'var(--ink)', transition: 'color .25s' }}>{p.title}</h3>
+        <p style={{ color: 'var(--muted)', fontSize: 14.5, lineHeight: 1.6, marginTop: 12 }}>{p.desc}</p>
+        <div className="flex flex-wrap gap-2" style={{ marginTop: 18 }}>
+          {p.tags.map((t) => (<span key={t} className="ab-mono" style={{ fontSize: 11, padding: '4px 9px', borderRadius: 7, color: 'var(--faint)', border: '1px solid var(--line-soft)' }}>{t}</span>))}
+        </div>
+        {p.link && (
+          <a href={p.link} target="_blank" rel="noopener noreferrer" className="ab-mono inline-flex items-center gap-1.5" style={{ marginTop: 20, fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', color: hover ? 'var(--accent)' : 'var(--muted)', transition: 'all .25s' }}>
+            View Project <ArrowUpRight size={14} style={{ transform: hover ? 'translate(2px,-2px)' : 'none', transition: 'transform .25s' }} />
           </a>
         )}
       </div>
@@ -386,586 +729,117 @@ const ProjectCard = ({ project, index }) => {
   );
 };
 
-// ============================================================
-// SKILLS
-// ============================================================
-const skills = [
-  { name: 'Python', category: 'lang' },
-  { name: 'React', category: 'web' },
-  { name: 'Machine Learning', category: 'ai' },
-  { name: 'Tailwind CSS', category: 'web' },
-  { name: 'SwiftUI', category: 'mobile' },
-  { name: 'Data Structures', category: 'cs' },
-  { name: 'Algorithms', category: 'cs' },
-  { name: 'Generative AI', category: 'ai' },
-  { name: 'Xcode', category: 'mobile' },
-  { name: 'Web Development', category: 'web' },
-  { name: 'Problem Solving', category: 'cs' },
-  { name: 'JavaScript', category: 'lang' },
-];
-
-const categoryColors = {
-  lang:   'bg-violet-500/15 text-violet-300 border-violet-500/25',
-  web:    'bg-sky-500/15 text-sky-300 border-sky-500/25',
-  ai:     'bg-emerald-500/15 text-emerald-300 border-emerald-500/25',
-  mobile: 'bg-teal-500/15 text-teal-300 border-teal-500/25',
-  cs:     'bg-rose-500/15 text-rose-300 border-rose-500/25',
-};
-
-// ============================================================
-// EXPERIENCE DATA  ← NEW
-// ============================================================
-const experiences = [
-  {
-    id: 1,
-    title: "Undergraduate Research Assistant",
-    company: "OSU Comprehensive Cancer Center / James Cancer Hospital",
-    dateRange: "Apr 2026 – Present",
-    location: "Columbus, OH",
-    bullets: [
-      "Developing the LifeScale platform to support clinical research workflows and patient data analysis.",
-      "Writing SQL queries against Epic Cosmos de-identified datasets to extract and structure patient data.",
-      "Collaborating with research scientists to surface clinical insights that inform doctors' decision-making.",
-    ],
-  },
-  {
-    id: 2,
-    title: "Student Assistant – Research Commons",
-    company: "The Ohio State University",
-    dateRange: "Aug 2025 – Present",
-    location: "Columbus, OH",
-    bullets: [
-      "Designed and developed an improved research library website in a team of two, enhancing UX and navigation.",
-      "Coordinated and supported research and technology events for the university community.",
-      "Managed concierge desk operations, assisting students and faculty with research resources.",
-    ],
-  },
-  {
-    id: 3,
-    title: "Server / Team Member",
-    company: "Aladdin's Eatery",
-    dateRange: "Jun 2024 – Aug 2025",
-    location: "Powell, OH",
-    bullets: [
-      "Explained menu items, took orders, and operated the register in a fast-paced dining environment.",
-      "Managed and resolved customer complaints with professionalism and care.",
-      "Maintained friendly, professional customer interactions to ensure a positive dining experience.",
-    ],
-  },
-];
-
-// ============================================================
-// EXPERIENCE ENTRY  ← NEW
-// Uses three separate useInView hooks (left, right, mobile) so
-// the IntersectionObserver fires correctly for whichever side
-// actually renders — fixing the "invisible card" bug.
-// ============================================================
-const ExperienceEntry = ({ experience, index }) => {
-  const [leftRef,   leftInView]   = useInView();
-  const [rightRef,  rightInView]  = useInView();
-  const [mobileRef, mobileInView] = useInView();
-  const isLeft = index % 2 === 0;
-
-  const CardInner = () => (
-    <>
-      <h3 className="text-lg font-bold text-white leading-snug mb-1">{experience.title}</h3>
-      <p className="text-emerald-400 font-semibold text-sm mb-1">{experience.company}</p>
-      <p className="text-gray-500 text-xs mb-4">{experience.location}</p>
-      <ul className="space-y-2">
-        {experience.bullets.map((b, i) => (
-          <li key={i} className="flex items-start gap-2 text-gray-300 text-sm leading-relaxed">
-            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
-            {b}
-          </li>
-        ))}
-      </ul>
-    </>
-  );
-
-  return (
-    <div className="relative w-full">
-
-      {/* ── DESKTOP: alternating left / right ── */}
-      <div className="hidden md:grid md:grid-cols-[1fr_auto_1fr] w-full items-start">
-
-        {/* LEFT slot */}
-        <div className="flex justify-end pr-8 py-6">
-          {isLeft ? (
-            <div
-              ref={leftRef}
-              className="group relative w-full max-w-sm bg-white/5 backdrop-blur-lg rounded-2xl p-6
-                border border-white/10 border-l-2 border-l-emerald-500/50
-                hover:border-emerald-400/40 hover:shadow-xl hover:shadow-emerald-500/10
-                hover:-translate-y-1 transition-all duration-300"
-              style={{
-                opacity: leftInView ? 1 : 0,
-                transform: leftInView ? 'translateX(0)' : 'translateX(-48px)',
-                transition: 'opacity 0.7s ease, transform 0.7s ease',
-              }}
-            >
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              <div className="relative z-10"><CardInner /></div>
-            </div>
-          ) : (
-            <div ref={leftRef} className="w-full max-w-sm" />
-          )}
-        </div>
-
-        {/* CENTER spine */}
-        <div className="flex flex-col items-center">
-          <div className="w-px flex-1 bg-emerald-500/30 min-h-[2rem]" />
-          <div className="w-4 h-4 rounded-full bg-emerald-400 ring-4 ring-[#030d06] z-10 flex-shrink-0" />
-          <div className="my-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold whitespace-nowrap">
-            {experience.dateRange}
-          </div>
-          <div className="w-px flex-1 bg-emerald-500/30 min-h-[2rem]" />
-        </div>
-
-        {/* RIGHT slot */}
-        <div className="flex justify-start pl-8 py-6">
-          {!isLeft ? (
-            <div
-              ref={rightRef}
-              className="group relative w-full max-w-sm bg-white/5 backdrop-blur-lg rounded-2xl p-6
-                border border-white/10 border-r-2 border-r-emerald-500/50
-                hover:border-emerald-400/40 hover:shadow-xl hover:shadow-emerald-500/10
-                hover:-translate-y-1 transition-all duration-300"
-              style={{
-                opacity: rightInView ? 1 : 0,
-                transform: rightInView ? 'translateX(0)' : 'translateX(48px)',
-                transition: 'opacity 0.7s ease, transform 0.7s ease',
-              }}
-            >
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              <div className="relative z-10"><CardInner /></div>
-            </div>
-          ) : (
-            <div ref={rightRef} className="w-full max-w-sm" />
-          )}
-        </div>
+const Projects = () => (
+  <section id="projects" className="px-6 lg:px-8 py-28">
+    <div className="max-w-6xl mx-auto w-full">
+      <SectionHeader index="03" kicker="WHAT I'VE BUILT" title="Projects" />
+      <div className="grid md:grid-cols-2 gap-5">
+        {PROJECTS.map((p, i) => (<Reveal key={p.title} delay={(i % 2) * 80}><ProjectCard p={p} index={i} /></Reveal>))}
       </div>
-
-      {/* ── MOBILE: all stacked left ── */}
-      <div className="flex md:hidden w-full items-start gap-4 py-4">
-        <div className="flex flex-col items-center flex-shrink-0" style={{ width: 28 }}>
-          <div className="w-px flex-1 bg-emerald-500/30 min-h-[1rem]" />
-          <div className="w-3 h-3 rounded-full bg-emerald-400 ring-4 ring-[#030d06] flex-shrink-0" />
-          <div className="w-px flex-1 bg-emerald-500/30 min-h-[1rem]" />
-        </div>
-        <div
-          ref={mobileRef}
-          className="group relative flex-1 bg-white/5 backdrop-blur-lg rounded-2xl p-5
-            border border-white/10 border-l-2 border-l-emerald-500/50
-            hover:border-emerald-400/40 hover:shadow-xl hover:shadow-emerald-500/10
-            transition-all duration-300"
-          style={{
-            opacity: mobileInView ? 1 : 0,
-            transform: mobileInView ? 'translateX(0)' : 'translateX(-32px)',
-            transition: 'opacity 0.7s ease, transform 0.7s ease',
-          }}
-        >
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-          <div className="relative z-10">
-            <div className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold mb-3">
-              {experience.dateRange}
-            </div>
-            <CardInner />
-          </div>
-        </div>
-      </div>
-
     </div>
-  );
-};
+  </section>
+);
 
-// ============================================================
-// MAIN PORTFOLIO COMPONENT
-// ============================================================
+/* ============================================================
+   CONTACT
+   ============================================================ */
+const Contact = () => (
+  <section id="contact" className="px-6 lg:px-8 py-28">
+    <div className="max-w-6xl mx-auto w-full">
+      <SectionHeader index="04" kicker="LET'S CONNECT" title="Get in Touch" />
+      <div className="grid lg:grid-cols-12 gap-10 items-center">
+        <div className="lg:col-span-7">
+          <Reveal delay={80}>
+            <p className="ab-display" style={{ fontSize: 'clamp(1.6rem,4vw,2.5rem)', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+              <span className="ab-shine">Have a project, a role, or just want to chat?</span><br />
+              <span style={{ color: 'var(--muted)' }}>My inbox is always open.</span>
+            </p>
+          </Reveal>
+        </div>
+        <div className="lg:col-span-5">
+          <Reveal delay={160}>
+            <a href="mailto:bhati.27@osu.edu" className="flex items-center justify-between" style={{ padding: '18px 22px', borderRadius: 14, border: '1px solid var(--line)', background: 'var(--panel)', transition: 'border-color .25s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--line)')}>
+              <div className="flex items-center gap-3">
+                <Mail size={18} style={{ color: 'var(--accent)' }} />
+                <div>
+                  <div className="ab-mono" style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--faint)' }}>Email</div>
+                  <div style={{ fontSize: 14, color: 'var(--ink)', marginTop: 2 }}>bhati.27@osu.edu</div>
+                </div>
+              </div>
+              <ArrowUpRight size={16} style={{ color: 'var(--muted)' }} />
+            </a>
+            <div className="flex gap-3" style={{ marginTop: 14 }}>
+              {SOCIAL.filter((s) => s.label !== 'Email').map(({ icon: Icon, href, label }) => (
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="ab-mono flex-1 inline-flex items-center justify-center gap-2"
+                  style={{ padding: '14px', borderRadius: 14, border: '1px solid var(--line)', color: 'var(--ink)', fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', transition: 'all .25s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.color = 'var(--ink)'; }}>
+                  <Icon size={16} /> {label}
+                </a>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+/* ============================================================
+   ROOT
+   ============================================================ */
 const Portfolio = () => {
-  const [activeSection, setActiveSection] = useState('home');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [active, setActive] = useState('home');
 
-  const [showSplash, setShowSplash] = useState(true);
-  const [splashVisible, setSplashVisible] = useState(true);
-  const [portfolioVisible, setPortfolioVisible] = useState(false);
-
-  const handleEnter = () => {
-    setSplashVisible(false);
-    setTimeout(() => {
-      setShowSplash(false);
-      setPortfolioVisible(true);
-    }, 700);
-  };
-
+  // track scroll progress (drives the live background color)
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      view.scroll = max > 0 ? h.scrollTop / max : 0;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const scrollToSection = (section) => {
-    setActiveSection(section);
-    setMobileMenuOpen(false);
-    document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const go = (s) => { setActive(s); document.getElementById(s)?.scrollIntoView({ behavior: 'smooth' }); };
 
-  const [heroRef, heroInView] = useInView();
-  const [aboutRef, aboutInView] = useInView();
-  const [expHeaderRef, expHeaderInView] = useInView();  // ← NEW
-  const [contactRef, contactInView] = useInView();
+  useEffect(() => {
+    const obs = new IntersectionObserver((entries) => entries.forEach((e) => e.isIntersecting && setActive(e.target.id)), { rootMargin: '-45% 0px -45% 0px' });
+    NAV.forEach((s) => { const el = document.getElementById(s); if (el) obs.observe(el); });
+    return () => obs.disconnect();
+  }, []);
 
   return (
-    <>
-      {showSplash && (
-        <div
-          className="transition-opacity duration-700"
-          style={{ opacity: splashVisible ? 1 : 0 }}
-        >
-          <SplashScreen onEnter={handleEnter} />
-        </div>
-      )}
+    <div className="ab-root min-h-screen overflow-x-hidden" style={{ position: 'relative' }}>
+      <GlobalStyle />
+      <ScrollProgress />
+      <LiveBackground />
 
-      <div
-        className="min-h-screen text-white overflow-x-hidden transition-opacity duration-700"
-        style={{
-          background: '#030d06',
-          opacity: portfolioVisible ? 1 : 0,
-          pointerEvents: portfolioVisible ? 'auto' : 'none',
-        }}
-      >
-        <PhotoBackground opacity={0.45} />
-        <LeafBackground />
+      {/* grain overlay */}
+      <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 2, pointerEvents: 'none', opacity: 0.04, mixBlendMode: 'overlay',
+        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
 
-        <nav
-          className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-            scrolled
-              ? 'bg-black/60 backdrop-blur-xl border-b border-white/8 shadow-lg shadow-black/20'
-              : 'bg-transparent'
-          }`}
-        >
-          <div className="max-w-6xl mx-auto px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <button
-                onClick={() => scrollToSection('home')}
-                className="text-lg font-bold bg-gradient-to-r from-emerald-300 via-emerald-200 to-emerald-500 bg-clip-text text-transparent tracking-tight"
-                style={{ fontFamily: "'Syne', sans-serif" }}
-              >
-                AB
-              </button>
-
-              <div className="hidden md:flex items-center gap-1">
-                {['home', 'about', 'experience', 'projects', 'contact'].map((section) => (
-                  <button
-                    key={section}
-                    onClick={() => scrollToSection(section)}
-                    className={`px-4 py-2 rounded-lg text-sm capitalize transition-all ${
-                      activeSection === section
-                        ? 'text-emerald-400 bg-emerald-400/10'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    {section}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-              </button>
-            </div>
-          </div>
-
-          <div className={`md:hidden transition-all duration-300 overflow-hidden ${
-            mobileMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
-          }`}>
-            <div className="bg-black/80 backdrop-blur-xl border-t border-white/10 px-6 py-4 space-y-1">
-              {['home', 'about', 'experience', 'projects', 'contact'].map((section) => (
-                <button
-                  key={section}
-                  onClick={() => scrollToSection(section)}
-                  className="block w-full text-left px-4 py-3 capitalize text-gray-300 hover:text-emerald-400 hover:bg-white/5 rounded-lg transition-all"
-                >
-                  {section}
-                </button>
-              ))}
-            </div>
-          </div>
-        </nav>
-
-        {/* HERO */}
-        <section id="home" className="relative min-h-screen flex items-center justify-center px-6">
-          <ParticleBackground />
-
-          <div
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              overflow: 'hidden',
-              pointerEvents: 'none',
-              zIndex: 0,
-            }}
-          >
-            <img
-              src="/jeremy-bishop-uAfZBP-GtiA-unsplash.jpg"
-              alt=""
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center 30%',
-                opacity: 0.35,
-                filter: 'saturate(0.9) brightness(0.8)',
-                maskImage: 'radial-gradient(ellipse 80% 60% at 50% 50%, black 0%, transparent 80%)',
-                WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 50%, black 0%, transparent 80%)',
-              }}
-            />
-          </div>
-
-          <div ref={heroRef} className="relative z-10 max-w-4xl mx-auto text-center">
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-sm mb-8 backdrop-blur-md ${animateIn(heroInView)}`}>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Available for opportunities
-            </div>
-
-            <h1
-              className={`text-6xl md:text-8xl font-black mb-4 tracking-tight ${animateIn(heroInView, 'delay-100')}`}
-              style={{ fontFamily: "'Syne', sans-serif" }}
-            >
-              <TypewriterEffect text="Aniruddha" speed={90} className="text-white" />
-              <br />
-              <span className="bg-gradient-to-r from-emerald-300 via-emerald-200 to-emerald-500 bg-clip-text text-transparent">
-                Bhati
-              </span>
-            </h1>
-
-            <p className={`text-lg md:text-xl text-gray-200 font-medium mb-2 ${animateIn(heroInView, 'delay-200')}`}>
-              Scholars CSE & Business @ The Ohio State University
-            </p>
-            <p className={`text-base text-gray-300 mb-10 ${animateIn(heroInView, 'delay-300')}`}>
-              Aspiring AI/ML Engineer · Emerging Developer · Growth-Driven Learner
-            </p>
-
-            <div className={`flex justify-center gap-4 flex-wrap ${animateIn(heroInView, 'delay-[400ms]')}`}>
-              <button
-                onClick={() => scrollToSection('projects')}
-                className="px-7 py-3 bg-gradient-to-r from-emerald-500 to-emerald-700 rounded-full font-semibold
-                  hover:shadow-lg hover:shadow-emerald-500/30 hover:scale-105 transition-all duration-200 text-white"
-              >
-                View Projects
-              </button>
-              <button
-                onClick={() => scrollToSection('contact')}
-                className="px-7 py-3 border border-white/30 backdrop-blur-sm rounded-full font-semibold
-                  hover:border-emerald-400/50 hover:bg-white/10 hover:scale-105 transition-all duration-200 text-white"
-              >
-                Get in Touch
-              </button>
-            </div>
-          </div>
-
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-60">
-            <ChevronDown size={24} />
-          </div>
-        </section>
-
-        {/* ABOUT */}
-        <section id="about" className="min-h-screen flex items-center justify-center px-6 py-24">
-          <div className="max-w-5xl mx-auto w-full">
-            <div ref={aboutRef} className={animateIn(aboutInView)}>
-              <p className="text-emerald-400 text-sm font-bold tracking-widest uppercase mb-3 text-center">Who I Am</p>
-              <h2
-                className="text-4xl md:text-6xl font-black mb-16 text-center tracking-tight text-white"
-                style={{ fontFamily: "'Syne', sans-serif" }}
-              >
-                About Me
-              </h2>
-            </div>
-
-            <div className="grid md:grid-cols-5 gap-8">
-              <div className={`md:col-span-3 bg-black/40 backdrop-blur-xl rounded-2xl p-8 border border-white/20 space-y-5 text-gray-100 leading-relaxed ${animateIn(aboutInView, 'delay-100')}`}>
-                <p>
-                  Hi! I'm a freshman <span className="text-emerald-300 font-bold">Scholars Computer Science & Engineering</span> student
-                  with a minor in Business at The Ohio State University.
-                </p>
-                <p>
-                  I'm passionate about technology and how data structures and algorithms shape the systems we use daily.
-                  I have a deep interest in{' '}
-                  <span className="text-emerald-400 font-bold underline decoration-emerald-500/30">machine learning</span> and{' '}
-                  <span className="text-emerald-400 font-bold underline decoration-emerald-500/30">generative AI</span>, and I hope to build a career at that frontier.
-                </p>
-                <p>
-                  I'm constantly learning, building, and expanding my skills — always chasing real-world, impactful solutions.
-                </p>
-
-                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/10">
-                  {[
-                    { value: '5+', label: 'Projects' },
-                    { value: '2', label: 'Hackathons' },
-                    { value: '∞', label: 'Curiosity' },
-                  ].map(stat => (
-                    <div key={stat.label} className="text-center">
-                      <div className="text-2xl font-black text-emerald-400" style={{ fontFamily: "'Syne', sans-serif" }}>{stat.value}</div>
-                      <div className="text-xs text-gray-400 mt-1 uppercase tracking-tighter font-bold">{stat.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className={`md:col-span-2 bg-black/40 backdrop-blur-xl rounded-2xl p-8 border border-white/20 ${animateIn(aboutInView, 'delay-200')}`}>
-                <h3 className="text-sm font-bold tracking-widest uppercase text-gray-400 mb-5">Skills & Interests</h3>
-
-                <div className="flex flex-wrap gap-2 mb-5 text-xs">
-                  {[
-                    { label: 'Languages', color: 'text-violet-300' },
-                    { label: 'Web', color: 'text-sky-300' },
-                    { label: 'AI/ML', color: 'text-emerald-300' },
-                    { label: 'Mobile', color: 'text-teal-300' },
-                    { label: 'CS', color: 'text-rose-300' },
-                  ].map(c => (
-                    <span key={c.label} className={`${c.color} font-bold`}>● {c.label}</span>
-                  ))}
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {skills.map((skill, i) => (
-                    <span
-                      key={skill.name}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all hover:scale-105 cursor-default ${categoryColors[skill.category]}`}
-                      style={{
-                        opacity: aboutInView ? 1 : 0,
-                        transform: aboutInView ? 'translateY(0)' : 'translateY(8px)',
-                        transition: `opacity 0.4s ease ${i * 50}ms, transform 0.4s ease ${i * 50}ms`,
-                      }}
-                    >
-                      {skill.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* EXPERIENCE ← NEW SECTION */}
-        <section id="experience" className="min-h-screen flex items-center justify-center px-6 py-24">
-          <div className="max-w-5xl mx-auto w-full">
-
-            <div ref={expHeaderRef} className={animateIn(expHeaderInView)}>
-              <p className="text-emerald-400 text-sm font-bold tracking-widest uppercase mb-3 text-center">My Journey</p>
-              <h2
-                className="text-4xl md:text-6xl font-black mb-16 text-center tracking-tight text-white"
-                style={{ fontFamily: "'Syne', sans-serif" }}
-              >
-                Experience
-              </h2>
-            </div>
-
-            <div className="relative">
-              {/* Faint continuous spine line behind all entries, desktop only */}
-              <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-emerald-500/20 pointer-events-none" />
-              {experiences.map((exp, index) => (
-                <ExperienceEntry key={exp.id} experience={exp} index={index} />
-              ))}
-            </div>
-
-          </div>
-        </section>
-
-        {/* PROJECTS */}
-        <section id="projects" className="min-h-screen flex items-center justify-center px-6 py-24">
-          <div className="max-w-6xl mx-auto w-full">
-            <div className="text-center mb-16">
-              <p className="text-emerald-400 text-sm font-bold tracking-widest uppercase mb-3">What I've Built</p>
-              <h2
-                className="text-4xl md:text-6xl font-black tracking-tight text-white"
-                style={{ fontFamily: "'Syne', sans-serif" }}
-              >
-                Projects
-              </h2>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map((project, index) => (
-                <ProjectCard key={project.id} project={project} index={index} />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CONTACT */}
-        <section id="contact" className="min-h-screen flex items-center justify-center px-6 py-24">
-          <div className="max-w-2xl mx-auto w-full text-center">
-            <div ref={contactRef}>
-              <p className={`text-emerald-400 text-sm font-bold tracking-widest uppercase mb-3 ${animateIn(contactInView)}`}>
-                Let's Connect
-              </p>
-              <h2
-                className={`text-4xl md:text-6xl font-black mb-6 tracking-tight text-white ${animateIn(contactInView, 'delay-100')}`}
-                style={{ fontFamily: "'Syne', sans-serif" }}
-              >
-                Get In Touch
-              </h2>
-              <p className={`text-gray-200 font-medium text-lg mb-12 ${animateIn(contactInView, 'delay-200')}`}>
-                I'm always open to new projects, creative ideas, or opportunities. Let's build something great together.
-              </p>
-            </div>
-
-            <div className={`bg-black/40 backdrop-blur-xl rounded-2xl p-8 border border-white/20 ${animateIn(contactInView, 'delay-300')}`}>
-              <a
-                href="mailto:bhati.27@buckeyemail.osu.edu"
-                className="group flex items-center justify-between w-full px-6 py-4
-                  bg-gradient-to-r from-emerald-500/10 to-emerald-700/10
-                  border border-emerald-500/30 rounded-xl hover:border-emerald-400/60
-                  hover:bg-emerald-500/20 transition-all mb-6"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-emerald-500/30 rounded-lg">
-                    <Mail size={18} className="text-emerald-300" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-xs text-gray-400 font-bold mb-0.5 uppercase tracking-tighter">Email me at</p>
-                    <p className="text-sm font-bold text-emerald-300">bhati.27@buckeyemail.osu.edu</p>
-                  </div>
-                </div>
-                <ExternalLink size={16} className="text-gray-400 group-hover:text-emerald-300 transition-colors" />
-              </a>
-
-              <p className="text-gray-400 text-sm font-bold mb-4 uppercase tracking-widest">Or find me on</p>
-              <div className="flex justify-center gap-4">
-                {[
-                  { href: "https://github.com/anibhati", icon: <Github size={20} />, label: "GitHub" },
-                  { href: "https://www.linkedin.com/in/aniruddha-singh-bhati-729771377/", icon: <Linkedin size={20} />, label: "LinkedIn" },
-                ].map(({ href, icon, label }) => (
-                  <a
-                    key={label}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-5 py-3 bg-white/10 hover:bg-white/20
-                      border border-white/20 hover:border-white/40 rounded-xl text-white
-                      transition-all hover:scale-105 text-sm font-bold"
-                  >
-                    {icon} {label}
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* FOOTER */}
-        <footer className="border-t border-white/10 py-8 text-center bg-black/20 backdrop-blur-md">
-          <p className="text-gray-400 text-sm font-medium">
-            © 2025 <span className="text-emerald-400 font-bold">Aniruddha Bhati</span> · Built with React & Tailwind CSS
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <Nav active={active} go={go} />
+        <Hero go={go} />
+        <About />
+        <Marquee words={MARQUEE_WORDS} speed={32} />
+        <Experience />
+        <Projects />
+        <Marquee words={MARQUEE_WORDS} reverse speed={36} />
+        <Contact />
+        <footer style={{ borderTop: '1px solid var(--line-soft)', padding: '28px 0', textAlign: 'center' }}>
+          <p className="ab-mono inline-flex items-center gap-2" style={{ fontSize: 12, color: 'var(--faint)', letterSpacing: '0.04em' }}>
+            <Sparkles size={12} style={{ color: 'var(--accent)' }} />
+            © 2026 Aniruddha Bhati · Built with React &amp; Tailwind CSS
           </p>
         </footer>
       </div>
-    </>
+    </div>
   );
 };
 
