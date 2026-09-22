@@ -38,7 +38,7 @@ export const projects = [
     recipe: "Make doctors learn the coding system, or dig through it by hand between patients. They already have enough on their plate.",
     pot: "Flip it so the system understands plain English. Everything runs locally through Ollama, because this is real patient data on air-gapped infrastructure.",
     burnt: "The first version lived in a Colab notebook as a chatbot prototype. Once retrieval quality held up, I rebuilt it as a two-node LangGraph pipeline and demoed it at a research meeting. I can't show the actual interface or any output here, since this runs on real patient data and displaying it publicly would be a HIPAA violation, even with codes alone. What's shown is just the retrieval code itself.",
-    plated: "Built on about 1.25 million patient records covering roughly 340,000 diagnoses, with results back in a couple of minutes. Submitted as an abstract (SEARCH-Dx) with my teammates Ruchira Patil and Jenny Liu to the OSUCCC-James 27th Annual Scientific Meeting.",
+    plated: "Built on about 1.25 million patient records covering roughly 340,000 diagnoses, with results back in a couple of minutes. Presenting this as an abstract (SEARCH-Dx) with my teammates Ruchira Patil and Jenny Liu at the OSUCCC-James 27th Annual Scientific Meeting.",
     stack: ["LangGraph", "Ollama", "SBERT", "FAISS", "Databricks", "SQL"],
   },
   {
