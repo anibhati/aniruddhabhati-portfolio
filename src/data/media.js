@@ -1,16 +1,34 @@
-// Drop real images into /public/projects/ with these names. Missing files show a labeled placeholder.
-// WLG: use a demo account or blurred screenshot. Never show real client data.
+// Screenshots live in /public/projects/. "extra" photos show as a strip on the case study page.
 export const media = {
-  wlg: { src: "/projects/wlg.png", alt: "WLG client portal intake screen with demo data", links: [] },
-  mosaic: { src: "/projects/mosaic.png", alt: "Mosaic research report with a live candlestick chart", links: [] },
-  lifescale: { src: "/projects/lifescale.png", alt: "LifeScale query interface with sample question", links: [] },
+  wlg: {
+    src: "/projects/wlg.jpg",
+    alt: "Winterset Law Group client portal landing screen",
+    links: [{ label: "Firm website", href: "https://wintersetlawgroup.com/" }],
+    extra: [{ src: "/projects/wlg-site.jpg", alt: "Winterset Law Group public site I maintain" }],
+  },
+  mosaic: {
+    src: "/projects/mosaic.jpg",
+    alt: "Mosaic home screen with a live candlestick chart and agent pipeline status",
+    links: [],
+    extra: [],
+  },
+  lifescale: {
+    src: "/projects/lifescale.jpg",
+    alt: "LifeScale query interface with a sample question",
+    links: [],
+    extra: [],
+  },
   signalspace: {
-    src: "/projects/signalspace.png",
-    alt: "SignalSpace live waveform and per-class confidence meters",
+    src: "/projects/signalspace.jpg",
+    alt: "SignalSpace dashboard showing detection confidence for each sound class",
     links: [
       { label: "Live demo", href: "https://safety-alert-website.vercel.app" },
       { label: "Frontend code", href: "https://github.com/anibhati/safety-alert-website" },
       { label: "Model + API code", href: "https://github.com/anibhati/SafetyAlertApp" },
+    ],
+    extra: [
+      { src: "/projects/signalspace-talk.jpg", alt: "Presenting SignalSpace at the BDAA Research Gala" },
+      { src: "/projects/signalspace-team.jpg", alt: "Our team with our awards at the BDAA Research Gala" },
     ],
   },
 };

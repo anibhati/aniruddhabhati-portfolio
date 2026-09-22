@@ -7,5 +7,5 @@ export const toolkit = [
 
 export const involvement = [
   { name: "Big Data Analytics Association, ML Track", note: "Led the technical build of SignalSpace. 1st Place People's Choice at the Research Gala.", when: "Sep 2025 to now" },
-  { name: "Engineering Scholars Program", note: "Social Committee member, planning professional development and networking events for a cohort of 100+ engineering students.", when: "2025 to now" },
+  { name: "Engineering Scholars Leadership Council", note: "Plan professional development and community events for a selective cohort of 100+ engineering students.", when: "2025 to now" },
 ];

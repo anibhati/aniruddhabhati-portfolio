@@ -68,6 +68,17 @@ export default function CaseStudy({ id }) {
           </figure>
         )}
 
+        {(m.extra ?? []).length > 0 && (
+          <div className="kt-cs-extra">
+            {m.extra.map((x) => (
+              <figure key={x.src}>
+                <Photo src={x.src} alt={x.alt} label={`Add ${x.src} to /public`} />
+                <figcaption className="kt-muted">{x.alt}</figcaption>
+              </figure>
+            ))}
+          </div>
+        )}
+
         <div className="kt-cs-body">
           <Section title="The problem">{p.recipe}</Section>
           <Section title="What I did differently" red>{p.pot}</Section>

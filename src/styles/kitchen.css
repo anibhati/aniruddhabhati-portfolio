@@ -523,3 +523,10 @@ body { font-family: var(--body); }
   font-family: var(--body);
   letter-spacing: 0;
 }
+
+/* ===== v10: extra photos on a case study ===== */
+.kt-cs-extra { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; margin-top: 32px; }
+.kt-cs-extra figure { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.kt-cs-extra img, .kt-cs-extra .kt-ph { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: block; background: var(--frame); }
+.kt-cs-extra figcaption { font-size: 14px; }
+@media (max-width: 640px) { .kt-cs-extra { grid-template-columns: minmax(0, 1fr); } }
