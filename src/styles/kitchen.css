@@ -530,3 +530,56 @@ body { font-family: var(--body); }
 .kt-cs-extra img, .kt-cs-extra .kt-ph { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: block; background: var(--frame); }
 .kt-cs-extra figcaption { font-size: 14px; }
 @media (max-width: 640px) { .kt-cs-extra { grid-template-columns: minmax(0, 1fr); } }
+
+/* softer paper, deeper background */
+:root { --bg: #16191c; --bg-deep: #0f1113; --paper: #faf9f5; }
+
+/* ===== color presets: keep one, comment out the others ===== */
+
+/* 1. warm receipt paper + warm near-black (my pick) */
+:root { --bg: #14120f; --bg-deep: #0c0b09; --paper: #f6f1e7; --rail: #59544c; --rail-hi: #8b857a; --rail-lo: #2a2723; }
+
+/* 2. warm paper + the steel grey you had
+:root { --paper: #f6f1e7; }
+*/
+
+/* 3. warm paper + true black
+:root { --bg: #000000; --bg-deep: #000000; --paper: #f6f1e7; }
+*/
+
+/* dark: deeper charcoal, not pure black */
+:root { --bg: #15181a; --bg-deep: #0d0f10; }
+
+/* light: warmer, less hospital */
+:root[data-theme="light"] { --bg: #e8e6e1; --bg-deep: #dcd9d3; --rail: #a09a92; --rail-hi: #c7c2ba; --rail-lo: #726c64; }
+
+/* ===== dark mode color: keep one, comment out the others ===== */
+
+/* espresso */
+:root { --bg: #1a1512; --bg-deep: #120e0c; --rail: #5c5049; --rail-hi: #8b7d73; --rail-lo: #2b2320; --signal: #f2694f; --stamp-side: #8a3323; }
+
+/* deep navy
+:root { --bg: #111823; --bg-deep: #0b1018; --rail: #4a5668; --rail-hi: #7b8899; --rail-lo: #1e2733; --signal: #f2685c; --stamp-side: #8a2f2a; }
+*/
+
+/* forest green
+:root { --bg: #111814; --bg-deep: #0b100d; --rail: #45564c; --rail-hi: #758a7d; --rail-lo: #1d2721; --signal: #f0604f; --stamp-side: #872f25; }
+*/
+
+/* light mode: warm, matched to the espresso dark mode */
+:root[data-theme="light"] {
+  --bg: #e9e3d9;
+  --bg-deep: #ddd5c8;
+  --fg: #1a1512;
+  --muted: #5d534a;
+  --paper: #fffdf8;
+  --rail: #a1968a;
+  --rail-hi: #c6bcae;
+  --rail-lo: #6b6156;
+  --frame: #d5cdc0;
+  --ph-a: #dbd3c6;
+  --ph-b: #d2c9bb;
+  --signal: #b23c26;
+  --stamp-side: #8a3323;
+  --sweep: rgba(26, 21, 18, 0.05);
+}
