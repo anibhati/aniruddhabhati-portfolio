@@ -28,10 +28,12 @@ export default function Gallery() {
           },
         });
         gsap.utils.toArray(".kt-shot-frame").forEach((frame) => {
-          gsap.fromTo(frame.firstElementChild, { xPercent: -7 }, {
-            xPercent: 7, ease: "none",
-            scrollTrigger: { trigger: frame, containerAnimation: slide, start: "left right", end: "right left", scrub: true },
+          const pass = { trigger: frame, containerAnimation: slide, start: "left right", end: "right left", scrub: true };
+          gsap.fromTo(frame, { rotateY: -24, transformPerspective: 1100 }, { rotateY: 24, ease: "none", scrollTrigger: pass });
+          gsap.fromTo(frame, { scale: 0.92 }, {
+            keyframes: [{ scale: 1, duration: 0.5 }, { scale: 0.92, duration: 0.5 }], ease: "none", scrollTrigger: pass,
           });
+          gsap.fromTo(frame.firstElementChild, { xPercent: -7 }, { xPercent: 7, ease: "none", scrollTrigger: pass });
         });
       });
     },
