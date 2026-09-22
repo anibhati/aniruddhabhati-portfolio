@@ -391,7 +391,7 @@ const SKILL_GROUPS = [
 
 const SPECS = [
   { icon: Cpu, label: 'Focus', value: 'AI / ML · Full-stack' },
-  { icon: GraduationCap, label: 'Education', value: 'B.S. CSE (AI) · Engineering Scholars' },
+  { icon: GraduationCap, label: 'Education', value: 'B.S. CSE (AI) @ The Ohio State University' },
   { icon: MapPin, label: 'Location', value: 'Columbus, OH' },
   { icon: Briefcase, label: 'Currently', value: 'Intern @ Winterset · Research @ James' },
 ];
@@ -506,9 +506,9 @@ const Hero = ({ go }) => {
               </div>
             </Reveal>
 
-            <h1 className="ab-display" style={{ fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 0.92, fontSize: 'clamp(3rem,11vw,7.5rem)' }}>
+            <h1 className="ab-display" style={{ fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 0.92, fontSize: 'clamp(3rem,11vw,6.5rem)' }}>
               <span style={{ display: 'block', overflow: 'hidden' }}>
-                <span style={{ display: 'inline-block', animation: 'ab-rise .9s cubic-bezier(.2,.8,.2,1) .15s both' }}>Aniruddha</span>
+                <span style={{ display: 'inline-block', animation: 'ab-rise .9s cubic-bezier(.2,.8,.2,1) .15s both' }}>Aniruddha </span>
               </span>
               <span style={{ display: 'block', overflow: 'hidden' }}>
                 <span style={{ display: 'inline-block', animation: 'ab-rise .9s cubic-bezier(.2,.8,.2,1) .27s both' }}>Bhati<span style={{ color: 'var(--accent)' }}>.</span></span>
