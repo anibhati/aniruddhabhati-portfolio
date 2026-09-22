@@ -105,11 +105,11 @@ export default function Hero() {
         </div>
 
         <div className="kt-hero-copy">
-          <h1 className="kt-h1">I learn how it&rsquo;s usually done. Then I build it better.</h1>
+          <h1 className="kt-h1">I&rsquo;m Ani. I build software, cook, and take a lot of photos.</h1>
           <p className="kt-lead">
-            I build full-stack apps and machine-learning systems. Right now that&rsquo;s a client portal
-            for a law firm and a plain-English search tool over real patient data at OSU&rsquo;s James
-            Cancer Center.
+            I&rsquo;m a sophomore at Ohio State studying computer science and AI. Right now I&rsquo;m building
+            a client portal for a law firm and a plain-English search tool over real patient data at the
+            James Cancer Center.
           </p>
           <div className="kt-ctas">
             <Magnetic>

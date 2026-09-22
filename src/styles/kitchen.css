@@ -469,3 +469,57 @@ canvas.kt-shot-img { width: 116%; height: 100%; margin-left: -8%; display: block
   .kt-cs-next:hover .kt-cs-next-name { transform: none; }
   .kt-tool:hover { transform: none; }
 }
+
+/* smaller, sentence-style hero headline */
+.kt-hero-wide .kt-h1 { font-size: clamp(48px, 5.4vw, 84px); line-height: 0.98; letter-spacing: -1px; }
+
+/* ===== headline font =====
+   Pick ONE --headline line, delete or comment out the others:
+   Clash Display:     --headline: "Clash Display", var(--display);
+   Instrument Serif:  --headline: "Instrument Serif", Georgia, serif;
+   Archivo (old):     --headline: var(--display);
+*/
+:root { --headline: "Clash Display", var(--display); }
+
+.kt-h1, .kt-h2, .kt-story-h, .kt-cs-title, .kt-cs-h, .kt-cs-next-name, .kt-footer-h, .kt-404-h {
+  font-family: var(--headline);
+  font-weight: 600;
+  font-stretch: normal;
+  letter-spacing: -0.02em;
+}
+
+/* smaller hero sentence */
+.kt-hero-wide .kt-h1 { font-size: clamp(40px, 4.4vw, 64px); line-height: 1.05; }
+
+/* ===== type system: Clash Display + Geist + Geist Mono ===== */
+:root {
+  --display: "Clash Display", "Arial Narrow", sans-serif;
+  --headline: "Clash Display", sans-serif;
+  --body: "Geist", system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, monospace;
+}
+
+body { font-family: var(--body); }
+.kt-page button { font-family: var(--body); }
+
+/* display font everywhere it was used, tuned for Clash */
+.kt-stamp, .kt-s3d, .kt-ticket-name, .kt-ticket-title, .kt-h3, .kt-h4, .kt-job-role,
+.kt-tool-group, .kt-life-title, .kt-brand-name {
+  font-family: var(--display);
+  font-stretch: normal;
+}
+.kt-ticket-name, .kt-ticket-title, .kt-h3 { font-weight: 600; letter-spacing: -0.02em; }
+.kt-s3d { font-weight: 700; }
+
+/* monospace only for small ticket-style details */
+.kt-small, .kt-facts, .kt-ticket-sub, .kt-ticket-short, .kt-row, .kt-now,
+.kt-chips li, .kt-tool, .kt-cs-meta, .kt-job-when, .kt-status, .kt-resume,
+.kt-shot figcaption, .kt-404-ticket .kt-row {
+  font-family: var(--mono);
+}
+
+/* readable body text */
+.kt-prose, .kt-lead, .kt-pass-lead, .kt-block p, .kt-story-copy, .kt-cs-section p, .kt-cs-lead, .kt-involve p {
+  font-family: var(--body);
+  letter-spacing: 0;
+}
