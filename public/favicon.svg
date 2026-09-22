@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AB">
+  <rect width="64" height="64" rx="7" fill="#f2694f"/>
+  <text x="32" y="34" text-anchor="middle" dominant-baseline="central"
+        font-family="Arial Black, Arial Bold, Helvetica, sans-serif" font-weight="900"
+        font-size="46" fill="#1a1512">A</text>
+</svg>

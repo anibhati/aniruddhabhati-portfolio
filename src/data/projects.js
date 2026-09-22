@@ -23,7 +23,7 @@ export const projects = [
     mild: "Four AI agents that do an analyst team's research on a stock and hand back a report a regular investor can actually read.",
     recipe: "Pay for a Bloomberg terminal, or spend months learning to read filings, news, and charts on your own.",
     pot: "I built the team instead: a quant agent for the numbers, a news sentiment agent, a data agent for the trends, and a writer agent on the Claude API that turns it all into a readable report.",
-    burnt: "[What broke first on Mosaic, and how you fixed it]",
+    burnt: "Two things. Render was new to me, so the API kept freezing on real users until I worked out how it actually serves requests. The bigger one was agent handoff: one agent would finish, the chain would stop there, and no report ever got built. I had to make the pipeline wait on every agent before the writer runs.",
     plated: "A full research report in about two minutes, with live candlestick charts streaming in while the agents work.",
     stack: ["Next.js", "FastAPI", "SSE streaming", "yfinance", "Claude API", "Vercel", "Render"],
   },
