@@ -14,7 +14,7 @@ export const media = {
   },
   lifescale: {
     src: "/projects/lifescale.jpg",
-    alt: "LifeScale query interface with a sample question",
+    alt: "Retrieval pipeline returning ranked ICD-10 codes for a sample query, run on public coding vocabulary, not patient data",
     links: [],
     extra: [],
   },
