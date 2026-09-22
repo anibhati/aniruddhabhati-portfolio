@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="kt-footer-links">
           <Magnetic strength={0.2}><a href="mailto:bhati.27@osu.edu">bhati.27@osu.edu</a></Magnetic>
           <Magnetic strength={0.2}><a href="https://github.com/anibhati" target="_blank" rel="noreferrer">github.com/anibhati</a></Magnetic>
-          <Magnetic strength={0.2}><a href="https://www.linkedin.com/" target="_blank" rel="noreferrer">[YOUR LINKEDIN URL]</a></Magnetic>
+          <Magnetic strength={0.2}><a href="https://www.linkedin.com/in/aniruddha-singh-bhati-729771377" target="_blank" rel="noreferrer">linkedin.com/in/aniruddha-singh-bhati</a></Magnetic>
         </div>
         <div className="kt-footer-base">
           <span>Aniruddha Singh Bhati, Columbus, OH</span>

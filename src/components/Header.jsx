@@ -39,7 +39,7 @@ export default function Header({ home = true, delay = 1.5 }) {
       </nav>
       <motion.div className="kt-header-end" {...enter(6)}>
         <ThemeToggle />
-        <a href="/resume.pdf" target="_blank" rel="noreferrer" className="kt-resume">Resume</a>
+        
       </motion.div>
     </header>
   );

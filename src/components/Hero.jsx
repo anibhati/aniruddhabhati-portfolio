@@ -116,7 +116,7 @@ export default function Hero() {
               <a href="#menu" className="kt-btn kt-btn-solid" aria-label="See my work"><Roll>See my work</Roll></a>
             </Magnetic>
             <Magnetic>
-              <a href="/resume.pdf" target="_blank" rel="noreferrer" className="kt-btn kt-btn-line" aria-label="Resume"><Roll>Resume</Roll></a>
+              <a href="mailto:bhati.27@osu.edu" className="kt-btn kt-btn-line" aria-label="Email me"><Roll>Email me</Roll></a>
             </Magnetic>
           </div>
         </div>
