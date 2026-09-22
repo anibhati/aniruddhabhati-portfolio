@@ -12,8 +12,8 @@ export const cooking = {
 };
 
 export const life = [
-  { id: "cars", title: "Cars", line: "Big car person. [Add the car or type of cars you're into]", src: "/life/cars.jpg", alt: "A car I like" },
-  { id: "sneakers", title: "Sneakers", line: "Into fashion and sneakers. Currently wearing Onitsuka Tiger Mexico 66s.", src: "/life/sneakers.jpg", alt: "My Onitsuka Tiger Mexico 66s" },
-  { id: "photography", title: "Photography", line: "I like taking photos. A few of my favorites are below.", src: "/life/photography.jpg", alt: "A photo I took" },
-  { id: "osu", title: "Ohio State", line: "Home base. [Add your favorite spot on campus or in Columbus]", src: "/life/osu.jpg", alt: "Ohio State campus" },
+  { id: "cars", title: "Cars", line: "Big car person. Currently building the Lego Technic Porsche 911 GT3 RS.", src: "/life/cars.jpg", alt: "A car I like" },
+  { id: "sneakers", title: "Sneakers", line: "Into fashion and sneakers, current favorite shoes are the Onitsuka Tiger Mexico 66s.", src: "/life/sneakers.jpg", alt: "My Onitsuka Tiger Mexico 66s" },
+  { id: "photography", title: "Photography", line: "I like taking photos, mostly landscapes and bright colors.", src: "/life/photography.jpg", alt: "A photo I took" },
+  { id: "osu", title: "Ohio State", line: "Home base. This is Mirror Lake after a snowstorm.", src: "/life/osu.jpg", alt: "Ohio State campus" },
 ];
