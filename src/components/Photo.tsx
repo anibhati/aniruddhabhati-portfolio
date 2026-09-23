@@ -1,7 +1,9 @@
 import { useState } from "react";
 
 // Shows the image if it exists, otherwise a labeled placeholder telling you where to put it.
-export default function Photo({ src, alt, className = "", label }) {
+type PhotoProps = { src: string; alt: string; className?: string; label?: string };
+
+export default function Photo({ src, alt, className = "", label }: PhotoProps) {
   const [missing, setMissing] = useState(false);
   if (missing) {
     return (

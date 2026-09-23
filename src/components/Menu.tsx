@@ -6,17 +6,24 @@ import Rail from "./Rail";
 import Ticket from "./Ticket";
 import SpiceToggle from "./SpiceToggle";
 import ProjectPanel from "./ProjectPanel";
+import type { Spice } from "./SpiceToggle";
+import type { Project } from "../data/types";
+
+const isProjectId = (v: string | null): v is Project["id"] => projects.some((p) => p.id === v);
 
 export default function Menu() {
-  const [picked, setPickedState] = useState(() => sessionStorage.getItem("kt-picked") || "signalspace");
-  const [spice, setSpice] = useState("hot");
-  const setPicked = (id) => {
+  const [picked, setPickedState] = useState<Project["id"]>(() => {
+    const saved = sessionStorage.getItem("kt-picked");
+    return isProjectId(saved) ? saved : "signalspace";
+  });
+  const [spice, setSpice] = useState<Spice>("hot");
+  const setPicked = (id: Project["id"]) => {
     sessionStorage.setItem("kt-picked", id);
     setPickedState(id);
   };
   const current = projects.find((p) => p.id === picked) ?? projects[0];
   const heading = useSplitReveal();
-  const ticketsRef = useRef(null);
+  const ticketsRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
     () => {

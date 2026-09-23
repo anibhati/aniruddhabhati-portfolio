@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import type { MouseEvent } from "react";
 import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
 import { gsap, SplitText, useGSAP, calm } from "../motion/gsap";
 import Magnetic from "../motion/Magnetic";
@@ -12,7 +13,7 @@ const facts = [
   ["Based in", "Columbus, OH"],
 ];
 
-function Roll({ children }) {
+function Roll({ children }: { children: string }) {
   return (
     <span className="kt-roll">
       <span data-text={children}>{children}</span>
@@ -60,7 +61,7 @@ export default function Hero() {
   const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [6, -6]), { stiffness: 150, damping: 15 });
   const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-8, 8]), { stiffness: 150, damping: 15 });
   const swayY = useSpring(useTransform(mx, [-0.5, 0.5], [3, -3]), { stiffness: 120, damping: 12 });
-  const onMove = (e) => {
+  const onMove = (e: MouseEvent<HTMLElement>) => {
     if (reduce) return;
     const r = e.currentTarget.getBoundingClientRect();
     mx.set((e.clientX - r.left) / r.width - 0.5);

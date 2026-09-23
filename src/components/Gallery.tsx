@@ -5,8 +5,8 @@ import useSplitReveal from "../motion/useSplitReveal";
 import DistortImage from "./DistortImage";
 
 export default function Gallery() {
-  const section = useRef(null);
-  const track = useRef(null);
+  const section = useRef<HTMLElement>(null);
+  const track = useRef<HTMLDivElement>(null);
   const heading = useSplitReveal();
 
   useGSAP(
@@ -14,6 +14,7 @@ export default function Gallery() {
       const mm = gsap.matchMedia();
       mm.add("(min-width: 769px) and (prefers-reduced-motion: no-preference)", () => {
         const el = track.current;
+        if (!el) return;
         const dist = () => el.scrollWidth - window.innerWidth;
         const slide = gsap.to(el, {
           x: () => -dist(),
@@ -27,7 +28,7 @@ export default function Gallery() {
             invalidateOnRefresh: true,
           },
         });
-        gsap.utils.toArray(".kt-shot-frame").forEach((frame) => {
+        gsap.utils.toArray<HTMLElement>(".kt-shot-frame").forEach((frame) => {
           const pass = { trigger: frame, containerAnimation: slide, start: "left right", end: "right left", scrub: true };
           gsap.fromTo(frame, { rotateY: -24, transformPerspective: 1100 }, { rotateY: 24, ease: "none", scrollTrigger: pass });
           gsap.fromTo(frame, { scale: 0.92 }, {

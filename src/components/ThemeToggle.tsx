@@ -2,11 +2,12 @@ import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
 export default function ThemeToggle() {
-  const btn = useRef(null);
-  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || "dark");
+  const btn = useRef<HTMLButtonElement>(null);
+  const [theme, setTheme] = useState<Theme>(() => (document.documentElement.dataset.theme === "light" ? "light" : "dark"));
   const next = theme === "dark" ? "light" : "dark";
 
-  const apply = (t) => {
+  type Theme = "dark" | "light";
+  const apply = (t: Theme) => {
     document.documentElement.dataset.theme = t;
     try { localStorage.setItem("kt-theme", t); } catch (e) { /* private mode */ }
     setTheme(t);
@@ -18,6 +19,7 @@ export default function ThemeToggle() {
       apply(next);
       return;
     }
+    if (!btn.current) return;
     const r = btn.current.getBoundingClientRect();
     const x = r.left + r.width / 2;
     const y = r.top + r.height / 2;

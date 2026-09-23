@@ -1,8 +1,9 @@
 import { motion, useMotionTemplate, useReducedMotion, useTransform } from "framer-motion";
 import useTilt from "../motion/useTilt";
 import Photo from "./Photo";
+import type { LifeItem } from "../data/types";
 
-export default function Polaroid({ item, rotate }) {
+export default function Polaroid({ item, rotate }: { item: LifeItem; rotate: number }) {
   const reduce = useReducedMotion();
   const tilt = useTilt(12);
   const px = useTransform(tilt.mx, [-0.5, 0.5], [10, -10]);

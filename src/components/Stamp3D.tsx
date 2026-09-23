@@ -3,7 +3,9 @@ import { motion, useMotionValue, useReducedMotion, useSpring } from "framer-moti
 
 // mode "hover": spins once when its parent link is hovered (CSS).
 // mode "follow": tilts toward the pointer anywhere on the page.
-export default function Stamp3D({ size = 58, mode = "hover", layers = 8 }) {
+type Stamp3DProps = { size?: number; mode?: "hover" | "follow"; layers?: number };
+
+export default function Stamp3D({ size = 58, mode = "hover", layers = 8 }: Stamp3DProps) {
   const reduce = useReducedMotion();
   const rx = useMotionValue(0);
   const ry = useMotionValue(0);
@@ -12,7 +14,7 @@ export default function Stamp3D({ size = 58, mode = "hover", layers = 8 }) {
 
   useEffect(() => {
     if (mode !== "follow" || reduce) return;
-    const move = (e) => {
+    const move = (e: PointerEvent) => {
       ry.set((e.clientX / window.innerWidth - 0.5) * 70);
       rx.set(-(e.clientY / window.innerHeight - 0.5) * 50);
     };

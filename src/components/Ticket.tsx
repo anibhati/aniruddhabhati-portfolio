@@ -1,12 +1,16 @@
 import { motion, useReducedMotion } from "framer-motion";
 import useTilt from "../motion/useTilt";
+import { spring as springFor } from "../motion/transitions";
+import type { Project } from "../data/types";
 
 const TILTS = [-1.4, 1, -0.6, 1.3];
 
-export default function Ticket({ project, index, selected, onPick }) {
+type TicketProps = { project: Project; index: number; selected: boolean; onPick: () => void };
+
+export default function Ticket({ project, index, selected, onPick }: TicketProps) {
   const reduce = useReducedMotion();
   const tilt = useTilt(10);
-  const spring = reduce ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 14 };
+  const spring = springFor(reduce, 260, 14);
   return (
     <div className="kt-paper kt-drop">
       <motion.button

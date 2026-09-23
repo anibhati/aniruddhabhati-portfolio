@@ -1,5 +1,6 @@
+import type { Cooking, LifeItem } from "./types";
 // Edit any line. Photos go in /public/life/.
-export const cooking = {
+export const cooking: Cooking = {
   title: "How I got into cooking",
   body: [
     "It started on a boring day with nothing to eat at home. I wondered if something I made could beat ordering out, so I tried it. It could.",
@@ -11,7 +12,7 @@ export const cooking = {
   ],
 };
 
-export const life = [
+export const life: LifeItem[] = [
   { id: "cars", title: "Cars", line: "Big car person. Currently building the Lego Technic Porsche 911 GT3 RS.", src: "/life/cars.jpg", alt: "A car I like" },
   { id: "sneakers", title: "Sneakers", line: "Into fashion and sneakers, current favorite shoes are the Onitsuka Tiger Mexico 66s.", src: "/life/sneakers.jpg", alt: "My Onitsuka Tiger Mexico 66s" },
   { id: "photography", title: "Photography", line: "I like taking photos, mostly landscapes and bright colors.", src: "/life/photography.jpg", alt: "A photo I took" },

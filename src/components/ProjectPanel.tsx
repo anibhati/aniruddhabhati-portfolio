@@ -2,8 +2,13 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { media } from "../data/media";
 import { Link } from "../router";
 import Photo from "./Photo";
+import type { ReactNode } from "react";
+import type { Variants } from "framer-motion";
+import type { Project } from "../data/types";
+import type { Spice } from "./SpiceToggle";
+import { spring } from "../motion/transitions";
 
-function Block({ title, children, red }) {
+function Block({ title, children, red = false }: { title: string; children: ReactNode; red?: boolean }) {
   return (
     <div className="kt-block">
       <h4 className={red ? "kt-h4 kt-red" : "kt-h4"}>{title}</h4>
@@ -12,13 +17,15 @@ function Block({ title, children, red }) {
   );
 }
 
-const list = { show: { transition: { staggerChildren: 0.05, delayChildren: 0.15 } } };
-const chip = { hidden: { opacity: 0, y: 10, scale: 0.9 }, show: { opacity: 1, y: 0, scale: 1 } };
+const list: Variants = { show: { transition: { staggerChildren: 0.05, delayChildren: 0.15 } } };
+const chip: Variants = { hidden: { opacity: 0, y: 10, scale: 0.9 }, show: { opacity: 1, y: 0, scale: 1 } };
 
-export default function ProjectPanel({ project, spice, setSpice }) {
+type PanelProps = { project: Project; spice: Spice; setSpice: (s: Spice) => void };
+
+export default function ProjectPanel({ project, spice, setSpice }: PanelProps) {
   const reduce = useReducedMotion();
-  const t = reduce ? { duration: 0 } : { type: "spring", stiffness: 200, damping: 24 };
-  const m = media[project.id] ?? { links: [] };
+  const t = spring(reduce, 200, 24);
+  const m = media[project.id];
 
   return (
     <div className="kt-pass" aria-live="polite">
@@ -36,8 +43,8 @@ export default function ProjectPanel({ project, spice, setSpice }) {
                   key={i}
                   aria-hidden="true"
                   className="kt-char"
-                  initial={reduce ? false : { yPercent: 110 }}
-                  animate={{ yPercent: 0 }}
+                  initial={reduce ? false : { y: "110%" }}
+                  animate={{ y: "0%" }}
                   transition={{ ...t, delay: reduce ? 0 : i * 0.025 }}
                 >
                   {c}

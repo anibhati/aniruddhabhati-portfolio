@@ -1,11 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { flushSync } from "react-dom";
 
-const RouterContext = createContext({ path: "/", navigate: () => {} });
+type Router = { path: string; navigate: (to: string) => void };
+
+const RouterContext = createContext<Router>({ path: "/", navigate: () => {} });
 
 const toTop = () => (window.__lenis ? window.__lenis.scrollTo(0, { immediate: true }) : window.scrollTo(0, 0));
 
-export function RouterProvider({ children }) {
+export function RouterProvider({ children }: { children: ReactNode }) {
   const [path, setPath] = useState(() => window.location.pathname);
 
   useEffect(() => {
@@ -14,7 +17,7 @@ export function RouterProvider({ children }) {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  const navigate = useCallback((to) => {
+  const navigate = useCallback((to: string) => {
     if (to === window.location.pathname) return;
     const go = () => {
       window.history.pushState({}, "", to);
@@ -37,7 +40,9 @@ export function RouterProvider({ children }) {
 export const useRouter = () => useContext(RouterContext);
 
 // Regular <a> that navigates without a reload. Cmd/Ctrl-click still opens a new tab.
-export function Link({ to, onClick, children, ...rest }) {
+type LinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & { to: string };
+
+export function Link({ to, onClick, children, ...rest }: LinkProps) {
   const { navigate } = useRouter();
   return (
     <a

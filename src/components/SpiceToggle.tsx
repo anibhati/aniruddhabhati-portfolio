@@ -1,12 +1,14 @@
 import { motion } from "framer-motion";
 
-const OPTIONS = [
+export type Spice = "mild" | "hot";
+
+const OPTIONS: { value: Spice; label: string }[] = [
   { value: "mild", label: "Overview" },
   { value: "hot", label: "Deep dive" },
 ];
 
 // Segmented control; the white pill slides between options.
-export default function SpiceToggle({ spice, setSpice }) {
+export default function SpiceToggle({ spice, setSpice }: { spice: Spice; setSpice: (s: Spice) => void }) {
   return (
     <div className="kt-spice">
       <span id="spice-label">Detail</span>

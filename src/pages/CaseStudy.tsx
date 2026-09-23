@@ -8,8 +8,10 @@ import Header from "../components/Header";
 import Rail from "../components/Rail";
 import Photo from "../components/Photo";
 import Footer from "../components/Footer";
+import type { ReactNode } from "react";
+import type { Project } from "../data/types";
 
-function Section({ title, children, red }) {
+function Section({ title, children, red = false }: { title: string; children: ReactNode; red?: boolean }) {
   const heading = useSplitReveal();
   return (
     <section className="kt-cs-section">
@@ -19,12 +21,12 @@ function Section({ title, children, red }) {
   );
 }
 
-export default function CaseStudy({ id }) {
+export default function CaseStudy({ id }: { id: Project["id"] }) {
   const index = projects.findIndex((p) => p.id === id);
   const p = projects[index];
   const next = projects[(index + 1) % projects.length];
-  const m = media[id] ?? { links: [] };
-  const scope = useRef(null);
+  const m = media[id];
+  const scope = useRef<HTMLElement>(null);
   const back = () => sessionStorage.setItem("kt-return", "menu");
 
   useGSAP(

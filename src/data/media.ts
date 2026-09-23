@@ -1,5 +1,6 @@
+import type { Project, ProjectMedia } from "./types";
 // Screenshots live in /public/projects/. "extra" photos show as a strip on the case study page.
-export const media = {
+export const media: Record<Project["id"], ProjectMedia> = {
   wlg: {
     src: "/projects/wlg.jpg",
     alt: "Winterset Law Group client portal landing screen",

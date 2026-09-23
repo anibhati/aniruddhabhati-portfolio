@@ -1,9 +1,12 @@
 import { useEffect, useRef } from "react";
+import type { ElementType } from "react";
 import { motion, useMotionValue, useReducedMotion, useSpring } from "framer-motion";
 
-export default function Extrude3D({ text, as: Tag = "h2", className = "", layers = 10, depth = 2.2, max = 16 }) {
+type Extrude3DProps = { text: string; as?: ElementType; className?: string; layers?: number; depth?: number; max?: number };
+
+export default function Extrude3D({ text, as: Tag = "h2", className = "", layers = 10, depth = 2.2, max = 16 }: Extrude3DProps) {
   const reduce = useReducedMotion();
-  const ref = useRef(null);
+  const ref = useRef<HTMLElement>(null);
   const rx = useMotionValue(0);
   const ry = useMotionValue(0);
   const sx = useSpring(rx, { stiffness: 90, damping: 14 });
@@ -11,7 +14,7 @@ export default function Extrude3D({ text, as: Tag = "h2", className = "", layers
 
   useEffect(() => {
     if (reduce) return;
-    const move = (e) => {
+    const move = (e: PointerEvent) => {
       const r = ref.current?.getBoundingClientRect();
       if (!r || r.bottom < 0 || r.top > window.innerHeight) return; // only while on screen
       ry.set(((e.clientX - (r.left + r.width / 2)) / window.innerWidth) * max * 2);

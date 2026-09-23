@@ -11,8 +11,8 @@ export default function ScrollExtras() {
         { scale: 1, opacity: 1, ease: "none", scrollTrigger: { trigger: ".kt-footer", start: "top bottom", end: "top 30%", scrub: 1 } }
       );
       // project screenshots drift slightly inside their frame
-      gsap.utils.toArray(".kt-media").forEach((el) => {
-        gsap.fromTo(el.querySelector("img, .kt-ph"), { yPercent: -6 }, {
+      gsap.utils.toArray<HTMLElement>(".kt-media").forEach((el) => {
+        gsap.fromTo(el.querySelector<HTMLElement>("img, .kt-ph"), { yPercent: -6 }, {
           yPercent: 6, ease: "none",
           scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true },
         });

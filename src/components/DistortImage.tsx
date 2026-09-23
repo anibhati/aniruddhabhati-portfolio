@@ -40,20 +40,24 @@ void main() {
   );
 }`;
 
-export default function DistortImage({ src, alt, className = "" }) {
-  const canvas = useRef(null);
+type DistortImageProps = { src: string; alt: string; className?: string };
+
+export default function DistortImage({ src, alt, className = "" }: DistortImageProps) {
+  const canvas = useRef<HTMLCanvasElement>(null);
   const [fallback, setFallback] = useState(false);
 
   useEffect(() => {
     const c = canvas.current;
-    const gl = c && c.getContext("webgl", { premultipliedAlpha: false, antialias: false });
+    if (!c) return;
+    const gl = c.getContext("webgl", { premultipliedAlpha: false, antialias: false });
     if (!gl) {
       setFallback(true);
       return;
     }
 
-    const shader = (type, text) => {
+    const shader = (type: number, text: string): WebGLShader => {
       const s = gl.createShader(type);
+      if (!s) throw new Error("Could not create shader");
       gl.shaderSource(s, text);
       gl.compileShader(s);
       return s;
@@ -74,7 +78,7 @@ export default function DistortImage({ src, alt, className = "" }) {
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
-    const u = (n) => gl.getUniformLocation(prog, n);
+    const u = (n: string) => gl.getUniformLocation(prog, n);
     const U = { mouse: u("mouse"), hover: u("hover"), time: u("time"), res: u("res"), img: u("img") };
 
     const image = new Image();
@@ -115,7 +119,7 @@ export default function DistortImage({ src, alt, className = "" }) {
     const kick = () => {
       if (!raf) raf = requestAnimationFrame(loop);
     };
-    const onMove = (e) => {
+    const onMove = (e: PointerEvent) => {
       const r = c.getBoundingClientRect();
       state.mTo = [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
     };

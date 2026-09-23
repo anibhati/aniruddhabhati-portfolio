@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 
 // Tilts an element toward the pointer. Spread `handlers` on it and merge `style`.
@@ -8,7 +9,7 @@ export default function useTilt(max = 8) {
   const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [max, -max]), { stiffness: 180, damping: 16 });
   const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-max, max]), { stiffness: 180, damping: 16 });
 
-  const onMouseMove = (e) => {
+  const onMouseMove = (e: MouseEvent<HTMLElement>) => {
     if (reduce) return;
     const r = e.currentTarget.getBoundingClientRect();
     mx.set((e.clientX - r.left) / r.width - 0.5);
