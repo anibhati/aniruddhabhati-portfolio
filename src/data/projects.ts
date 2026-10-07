@@ -59,7 +59,7 @@ export const projects: Project[] = [
 ];
 
 export const kitchens: Job[] = [
-  { role: "IT Intern (Software Engineering)", place: "Winterset Law Group, Powell, OH", when: "May 2026 to now" },
+  { role: "Software Engineering Intern", place: "Winterset Law Group, Powell, OH", when: "May 2026 to now" },
   { role: "Undergraduate Research Assistant", place: "The OSU James Cancer Center, Columbus, OH", when: "Apr 2026 to now" },
   { role: "Student Assistant, Research Commons", place: "The Ohio State University", when: "Aug 2025 to Aug 2026" },
   { role: "Server", place: "Aladdin’s Eatery, Powell, OH", when: "Jun 2024 to Aug 2025" },
